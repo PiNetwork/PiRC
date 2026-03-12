@@ -21,3 +21,12 @@ Pi Launchpad aims to provide:
 - **On-chain transparency** of the launch process ensured by immutable smart contracts.
 
 Next: [`2-Core-Design`](2-core-design.md)
+
+---
+## 📍 PiRC1 Feedback – Section 1: Vision
+
+> The LaunchPad and my MapCap use case visions are both similar in most respects, with the following key differences:
+>
+> - **LaunchPad** includes the excellent **Engagement Reward** feature.  
+> - **MapCap** includes an ongoing **“Post-TGE Rewards”** feature, which continues rewarding token owners for utility usage after TGE for the whole lifespan of the app.
+
