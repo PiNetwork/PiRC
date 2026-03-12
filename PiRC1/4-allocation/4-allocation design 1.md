@@ -152,3 +152,30 @@ xychart-beta
 - Highly engaged participants pay $0.909p_{list}$. Medimum engaged participants pay $0.952p_{list}$. Least engaged participants pay $p_{list}$
 
 Next: [`5-tge-state`](<../5-tge-state/5-tge-state design 1.md>)
+
+---
+
+## 📍 PiRC1 Feedback – Section 4: Design (1 and 2)
+
+Both the LaunchPad and my MapCap use case detailed designs are similar in most respects, with the following key differences:
+
+> - **LaunchPad** offers two designs (**Design 1** and **Design 2**).
+>
+> - **MapCap** currently uses a design like **Design 1**. The use case currently doesn’t consider participants with locked-up Pi or **Design 2**. However, we propose:
+>   - To include the PiRC1 **locked-up Pi approach** in the MVP.
+>   - To explore **Design 2** in later iterations of the service.
+>
+> - **MapCap calculates T(available)** as a proportion of total **T(minted)**, with the remainder as **T(liquidity)**:  
+>   - T(available) → transferred to participants during allocation distribution.  
+>   - T(liquidity) → deposited into the LP just prior to market opening.  
+>   - This ensures the **LP opening spot price (P(list))** for all LaunchPad participants is **10% lower** than the AMM-calculated P(list) at LP opening.  
+>   - Participants feel rewarded as the opening spot price is effectively **10% higher** than the price paid in the LaunchPad phase.  
+>   - Note: Tokens are vested; the first tranche is released at the end of the first month after TGE.
+>
+> - **Engagement Reward Integration:**  
+>   - MapCap will set aside a portion of **T(available)** as **T(engage)**.  
+>   - T(engage) will be distributed based on **utility engagement**, so highly engaged participants receive more MapCap tokens than less engaged participants staking the same amount of Pi.
+>
+> - **Design 1 vs Design 2:**  
+>   - Initial LaunchPad MVP should use **Design 1** (simpler algorithm).  
+>   - **Design 2** can be included in a subsequent iteration based on user demand.
