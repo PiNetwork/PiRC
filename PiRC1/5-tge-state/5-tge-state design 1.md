@@ -56,3 +56,43 @@ In the base case with no rewards ($T_{engage}=0$), this gives $p_{floor}=0.25\,p
 **Intuitively:** even to the extent of “everyone swaps every token of theirs back to the pool”, the pool cannot be drained because the Escrow Wallet that added the liqludiity initially is locked and cannot withdraw from the pool; the pool still retains nearly half of the entire initial participant commitment ($0.488C$ Pi) and all of the tokens in circulation ($2.05T$ tokens), which mathematically prevents the price to drop further than 23.8% of $p_{list}$ in this construct.
 
 Next: [`Design 2`](<../4-allocation/4-allocation design 2.md>)
+
+---
+
+## 📍 PiRC1 Feedback – Section 5: Official TGE / Market Opening
+
+The TGE and market openings of both LaunchPad and my MapCap use case are similar in most respects, with the following key differences:
+
+> - **MapCap LP / Market Opening:**  
+>   - The LP/market opens for **unrestricted public access immediately after TGE**.  
+>   - Any Pioneer with a **mainnet wallet**, including LaunchPad participants, can buy MapCap tokens at **LP spot-price** and sell them.  
+>   - Tokens purchased during LaunchPad phase can only be **sold after vesting** (10% released at the end of each month after TGE).  
+>   - All tokens sold via MapCap LP, regardless of purchase timing, are **market sales** at the LP spot price at the time of sale.
+>
+> - **Governance Participation:**  
+>   - All token holders can participate in **app governance decisions** (e.g., feature prioritization, dividend amounts/frequency, engagement reward formulae).  
+>   - Governance participation occurs via **surveys, demos/reviews, and voting**.
+>
+> - **Post-TGE Rewards:**  
+>   - Ongoing rewards continue **forever after TGE** until app dissolution.  
+>   - Functionally similar to **dividends**: MapCap token holders receive **Pi payments** directly in their wallets.  
+>   - Frequency and amount of payouts are determined by **app governance**, based on revenue/profitability.  
+>   - Payouts are **proportional to token holdings**, optionally adjusted by **utility engagement value**.
+>
+> - **Engagement Incentive Continuation:**  
+>   - Utility engagement at payout is calculated using the **LaunchPad engagement algorithm**.  
+>   - Higher engagement → higher reward.  
+>   - Dividend engagement algorithm can only be changed via **token-holder-approved governance**.
+>
+> - **No Hard Price Floor (P(floor))**:  
+>   - In MapCap, LP can go as low as **zero Pi** if all tokens are sold back.  
+>   - Developers may intervene **optionally**, via governance, to restore Pi liquidity and token value.  
+>   - This allows **market-driven confidence** while keeping P(floor) flexible.
+>
+> - **End-of-Life / Dissolution Handling:**  
+>   - Token spot price can reduce to zero if the app ceases to exist.  
+>   - To prevent unfairness, MapCap includes an **LP exit process** before dissolution news:  
+>     - LP trading is suspended.  
+>     - A **single exit spot price (P(exit))** is calculated from remaining Pi vs total token holdings.  
+>     - During a **4-week exit period**, all token holders may swap tokens at **P(exit)**, ensuring fairness.  
+>     - After the exit period, remaining tokens can still be redeemed, but are essentially worthless.
