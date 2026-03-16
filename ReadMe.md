@@ -1,1 +1,1 @@
-See [PiRC1: Pi Ecosystem Token Design](./PiRC1/ReadMe.md)
+See [PiRC1: Pi Ecosystem Token Design](pinetwork./PiRC1/ReadMe.md)
