@@ -1,0 +1,31 @@
+name: PiRC-101 Full Production Pipeline
+on: [push, pull_request]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Rust & Soroban
+        run: |
+          rustup update stable
+          rustup target add wasm32-unknown-unknown
+          cargo install --locked soroban-cli
+          
+      - name: Build All Contracts
+        run: cargo build --target wasm32-unknown-unknown --release
+        
+      - name: Setup Python Environment
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          
+      - name: Run Economic Simulations
+        run: |
+          python3 simulations/pirc_agent_simulation_advanced.py
+          python3 economics/treasury_ai.py
+          
+      - name: Execute Full System Check
+        run: bash scripts/full_system_check.sh
+

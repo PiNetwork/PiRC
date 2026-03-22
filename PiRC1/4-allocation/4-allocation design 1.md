@@ -151,4 +151,56 @@ xychart-beta
 - Starting LP spot price is $p_{list} = \frac{C}{T}$
 - Highly engaged participants pay $0.909p_{list}$. Medimum engaged participants pay $0.952p_{list}$. Least engaged participants pay $p_{list}$
 
+---
+
+## 4.X Allocation Invariants and Consistency Conditions
+
+To preserve economic integrity and deterministic behavior of the allocation model,
+the following invariants must hold:
+
+### (1) Emission Conservation
+
+Total tokens distributed to participants must equal:
+
+Tpurchase + Tengage
+
+Formally:
+
+Σ_i (t_i^base + t_i^engage) = Tpurchase + Tengage
+
+---
+
+### (2) Liquidity Conservation
+
+All committed Pi must enter the Liquidity Pool:
+
+Σ_i c_i = C
+
+The LP must be initialized strictly with:
+
+(C, Tliquidity)
+
+No intermediate swap operation is allowed during initialization.
+
+---
+
+### (3) Monotonicity
+
+For any two participants i and j within the same engagement tier:
+
+If c_i > c_j  ⇒  t_i^base > t_j^base  
+If c_i > c_j  ⇒  t_i^engage ≥ t_j^engage  
+
+---
+
+### (4) Determinism
+
+Given identical inputs:
+
+{c_i}, engagement ranks {r_i}, and fixed parameters,
+
+the allocation outcome must be uniquely determined.
+
+No stochastic or discretionary adjustment may alter final token amounts.
+
 Next: [`5-tge-state`](<../5-tge-state/5-tge-state design 1.md>)
