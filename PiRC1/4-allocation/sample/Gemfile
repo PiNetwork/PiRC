@@ -1,0 +1,10 @@
+# frozen_string_literal: true
+
+source "https://rubygems.org"
+
+gem "csv" # default gem; explicit for Ruby 3.4+
+gem "osqp"
+
+group :development, :test do
+  gem "rspec", "~> 3.13"
+end

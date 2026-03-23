@@ -1,0 +1,43 @@
+## 4 Allocation Period
+
+This section describes an **optimal fairness** allocation option. It will
+provide maximal allocations that satiisfy commitment constraints while
+optimizing fairness. Note that this option does not deal with liquidity or
+engagement rewards.
+
+**Notation:**
+- $s_i$ the stake of an participant
+- $S$ the combined stakes of all participant
+- $c_i$ the commitment of a participent
+- $a_i$ the allocation of tokens to a participent
+- $A$ is the total allocation of tokesn
+
+
+- $C$ = total Pi committed by participants to purchase tokens of a project
+- $T_{purchase}$ = tokens allocated to participants (purchase bucket)
+- $T_{liquidity}$ = tokens reserved for liquidity seeding
+- $T_{engage}$ = tokens allocated for engagement discounts
+- $p_{list}$ = listing price (Pi per token) at which the LP is initialized
+
+### Fairness
+In this design option, we define a fair allocation to be one where a
+participant recieves an allocation rate equal to their stake rate. The
+stake rate is $s_i/S$ and the allocation rate is $a_i/A$. Therefore, a
+fair allocaiton occurss when
+
+$$s_i/S = a_i/A$$
+
+We can convert this constraint into a fairness measure across all participents.
+
+$$ F = \sum_i -(s_i/S = a_i/A)^2 $$
+
+Fairness is negated so we can talk about maximizing fairness, as unfair allocations will be negative.
+
+With this definition we can establish the following optimization problmen
+
+Find all $0 < a_i$\
+maximizing $A$ and $F$\
+under the constraint of $a_i$ <= c_i$
+
+With this formulation, it is possible to find satisfactory allocations using
+quadratic programming
