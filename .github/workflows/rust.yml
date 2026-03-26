@@ -1,0 +1,76 @@
+name: Vanguard Bridge Production Pipeline
+
+# 1. Triggers configuration
+on:
+  push:
+    branches: [ "main", "develop" ] # Triggers on push to main or develop
+    paths-ignore:
+      - 'README.md' # Do not trigger on documentation updates
+  pull_request:
+    branches: [ "main" ] # Triggers on PRs to main
+
+env:
+  CARGO_TERM_COLOR: always
+  # Optimal Rust version for Soroban development
+  RUST_VERSION: 1.75.0 
+
+jobs:
+  build_and_test:
+    name: Build, Lint, and Test Contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 15 # Safeguard against wasting free build minutes
+
+    steps:
+      # Step 1: Checkout code from repository
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Setup Rust toolchain with WASM target (Critical for Soroban)
+      - name: Setup Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: ${{ env.RUST_VERSION }}
+          override: true
+          components: rustfmt, clippy
+          target: wasm32-unknown-unknown # Required to build Soroban WASM artifacts
+
+      # Step 3: Efficient Caching to stay within free tier minutes
+      - name: Cache Cargo dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      # Step 4: INTEGRATED FIX - Install System Dependencies (DBus, SSL, pkg-config)
+      # This step solves the error regarding 'dbus-1' and 'pkg-config'.
+      - name: Install System Dependencies for Soroban
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libdbus-1-dev libssl-dev
+
+      # Step 5: Install Soroban CLI (for advanced testing)
+      - name: Install Soroban CLI
+        run: cargo install --locked soroban-cli
+
+      # Step 6: Code Quality Check - Formatting
+      - name: Check Code Formatting
+        run: cargo fmt -- --check
+
+      # Step 7: Code Quality Check - Static Analysis (Linter)
+      - name: Run Clippy (Linter)
+        run: cargo clippy -- -D warnings
+
+      # Step 8: Build the Smart Contract as WASM artifact
+      - name: Build Smart Contract (Release Mode)
+        run: cargo build --target wasm32-unknown-unknown --release
+
+      # Step 9: Run Unit Tests
+      - name: Run Unit Tests
+        run: cargo test
