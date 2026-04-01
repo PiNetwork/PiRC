@@ -1,0 +1,286 @@
+PiRC-X: Full System Architecture & End-to-End Flow
+
+Integrated Utility-Driven Token Launch Framework
+
+---
+
+1. Overview
+
+PiRC-X is a multi-layered system architecture that integrates:
+
+- Proof of Utility (PoU)
+- Trust Graph (TS)
+- Proof of Human (PoH)
+- Dynamic Pricing & Allocation Engine (DPAE)
+- Anti-Dump Engine & Token Lifecycle Control (ADE + TLC)
+
+into a unified, adaptive launchpad framework.
+
+«Core Objective:
+Create a token launch system where distribution, pricing, and market behavior are governed by real utility, trust, and verified participation.»
+
+---
+
+2. System Architecture Layers
+
+PiRC-X consists of five core layers:
+
+---
+
+2.1 Identity Layer (PoH)
+
+- KYC-based identity verification
+- Ensures one human = one account
+- Entry gate to the system
+
+Input: User Identity → Verified Human (PoH)
+
+---
+
+2.2 Utility Layer (PoU)
+
+- Tracks real user activity
+- Measures contribution value
+
+Input: User Actions → PoU Score
+
+---
+
+2.3 Trust Layer (Trust Graph)
+
+- Builds relational trust network
+- Assigns Trust Score (TS)
+
+Input: Network + Behavior → Trust Score (TS)
+
+---
+
+2.4 Economic Layer (DPAE)
+
+- Determines allocation and pricing
+
+Input: PoU + TS + Demand → Allocation & Price
+
+---
+
+2.5 Market Control Layer (ADE + TLC)
+
+- Controls unlock, selling, and liquidity
+
+Input: Allocation → Controlled Market Behavior
+
+---
+
+3. High-Level System Flow
+
+User → Identity Verification → Activity → Scoring → Allocation → Unlock → Market Interaction
+
+---
+
+4. End-to-End Flow (Detailed)
+
+---
+
+Phase 1: User Onboarding
+
+1. User enters ecosystem
+2. Completes identity verification
+
+User → PoH Verified
+
+---
+
+Phase 2: Participation & Activity
+
+User interacts with applications:
+
+- Transactions
+- Feature usage
+- Economic activity
+
+User Activity → PoU Calculation
+
+---
+
+Phase 3: Trust Formation
+
+System evaluates:
+
+- Interaction network
+- Behavior consistency
+
+PoU + Network → Trust Score (TS)
+
+---
+
+Phase 4: Allocation Phase
+
+User commits Pi:
+
+Commit Pi → Base Allocation
+
+Then adjusted:
+
+Final Allocation = PoU × TS × PoH
+
+---
+
+Phase 5: Dynamic Pricing
+
+Each user gets personalized pricing:
+
+Effective Price = f(PoU, TS, Demand)
+
+---
+
+Phase 6: Liquidity Formation
+
+- All Pi → Liquidity Pool
+- Tokens paired
+
+LP = (Total Pi, Token Supply)
+
+---
+
+Phase 7: Token Distribution
+
+Users receive tokens:
+
+- Partially unlocked
+- Governed by lifecycle rules
+
+---
+
+Phase 8: Controlled Unlock
+
+UnlockRate = f(Time, PoU, TS)
+
+---
+
+Phase 9: Market Interaction
+
+Users can:
+
+- Hold
+- Use
+- Sell (within limits)
+
+SellPower = f(TS, HoldingTime)
+
+---
+
+Phase 10: Feedback Loop
+
+System continuously updates:
+
+New Activity → Updated PoU → Updated TS
+
+---
+
+5. Data Flow Diagram (Conceptual)
+
+[User]
+   ↓
+[PoH Verification]
+   ↓
+[PoU Engine] ← Activity Data
+   ↓
+[Trust Graph Engine]
+   ↓
+[DPAE Engine]
+   ↓
+[Allocation + Pricing]
+   ↓
+[ADE + TLC]
+   ↓
+[Market / LP]
+   ↓
+[Feedback Loop → PoU]
+
+---
+
+6. Key System Properties
+
+---
+
+6.1 Self-Reinforcing
+
+- Good actors gain more influence
+- Bad actors are naturally limited
+
+---
+
+6.2 Adaptive
+
+- System evolves with user behavior
+- No static assumptions
+
+---
+
+6.3 Secure
+
+- Resistant to Sybil attacks
+- Resistant to manipulation
+
+---
+
+6.4 Scalable
+
+- Designed for millions of users
+- Efficient score computation
+
+---
+
+7. Comparison with Traditional Launchpads
+
+Feature| Traditional| PiRC-X
+Identity| Anonymous| Verified (PoH)
+Allocation| Static| Adaptive
+Pricing| Fixed| Dynamic
+Trust| None| Graph-based
+Anti-Dump| Weak| Built-in
+Utility Focus| Low| High
+
+---
+
+8. System Lifecycle Summary
+
+Verify → Participate → Score → Allocate → Unlock → Use → Sustain
+
+---
+
+9. Strategic Impact
+
+PiRC-X transforms the launchpad into:
+
+- A user acquisition engine
+- A utility validation system
+- A trust-based economy
+
+---
+
+10. Conclusion
+
+PiRC-X delivers a fully integrated system where:
+
+- Identity ensures fairness
+- Utility drives rewards
+- Trust governs influence
+- Market behavior is controlled
+
+«Final Outcome:
+A launchpad that evolves from a token distribution tool into a self-regulating economic ecosystem.»
+
+---
+
+11. Final Statement
+
+PiRC-X is not just a technical enhancement.
+
+It is a shift toward:
+
+«A decentralized economy where value is created, validated, and sustained by real human participation.»
+
+---
+
+End of Core Specification

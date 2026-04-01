@@ -1,0 +1,239 @@
+Game Theory & Economic Model
+
+This section formalizes the strategic behavior, incentive alignment, and equilibrium dynamics of the PiRC-X Launchpad system.
+
+The objective is to prove that:
+
+«Honest, utility-driven participation is the dominant strategy, while manipulation becomes economically irrational.»
+
+---
+
+1. System Model
+
+Let each participant i be defined by:
+
+- C_i: Capital (Pi committed)
+- U_i: Utility Score (Proof of Utility)
+- T_i: Trust Score (Trust Graph)
+- B_i: Behavior vector
+
+---
+
+Allocation Function
+
+The allocation is defined as:
+
+[
+A_i = \frac{w_1 \cdot \log(1 + C_i) + w_2 \cdot U_i + w_3 \cdot T_i}{\sum_j (w_1 \cdot \log(1 + C_j) + w_2 \cdot U_j + w_3 \cdot T_j)} \cdot T_{total}
+]
+
+Where:
+
+- w_1, w_2, w_3 are weights
+- T_{total} is total token supply allocated
+
+---
+
+2. Utility Functions
+
+Each participant maximizes:
+
+[
+\max ; \Pi_i = V(A_i) - Cost(C_i, Effort_i, Risk_i)
+]
+
+Where:
+
+- V(A_i): Value of received tokens
+- Cost includes:
+  - Capital lockup
+  - Effort (engagement)
+  - Risk (penalties, lockups)
+
+---
+
+3. Strategy Space
+
+Participants can choose:
+
+3.1 Honest Strategy
+
+- Real usage (high U_i)
+- Maintain trust (high T_i)
+- Moderate capital
+
+---
+
+3.2 Sybil Strategy
+
+- Split capital into multiple identities
+- Fake behavior
+
+---
+
+3.3 Whale Strategy
+
+- Maximize C_i only
+
+---
+
+3.4 Dump Strategy
+
+- Sell immediately after TGE
+
+---
+
+4. Nash Equilibrium Analysis
+
+Claim:
+
+The system converges to a Nash Equilibrium where honest participation dominates.
+
+---
+
+Proof Intuition
+
+Case 1: Sybil Attack
+
+Splitting capital:
+
+[
+\sum \log(1 + C_i^{split}) < \log(1 + C_{total})
+]
+
+➡️ Result:
+
+- No gain from splitting
+- Trust score decreases
+- Allocation decreases
+
+---
+
+Case 2: Whale Domination
+
+If C_i \gg others:
+
+[
+\log(1 + C_i) \text{ grows sublinearly}
+]
+
+➡️ Result:
+
+- Diminishing returns
+- Cannot dominate allocation
+
+---
+
+Case 3: Fake Utility
+
+Fake engagement:
+
+- Detected by AI
+- Penalized via Trust Score
+
+➡️ Result:
+[
+U_i^{fake} \rightarrow 0
+]
+
+---
+
+Case 4: Immediate Dump
+
+Dumping tokens:
+
+- Triggers penalties
+- Reduces future allocation
+- Enforces lockups
+
+➡️ Result:
+[
+Profit_{short-term} < Loss_{long-term}
+]
+
+---
+
+5. Equilibrium Outcome
+
+At equilibrium:
+
+- Honest users maximize payoff
+- Attackers face diminishing returns
+- System stabilizes around utility-driven participation
+
+---
+
+6. Market Dynamics
+
+Price Stability
+
+Given:
+
+- Locked liquidity
+- Controlled supply release
+- Anti-dump engine
+
+The price follows:
+
+[
+P_t = f(Supply_t, Demand_t, Utility_t)
+]
+
+Where:
+
+- Supply is controlled
+- Demand is utility-driven
+
+---
+
+Lower Bound Protection
+
+From liquidity model:
+
+[
+P_{floor} \approx 0.16 \cdot P_{list}
+]
+
+➡️ Prevents total collapse
+
+---
+
+7. Incentive Alignment
+
+Actor| Incentive| Result
+User| Use product| ↑ Utility
+Developer| Build real app| ↑ Demand
+System| Enforce fairness| ↑ Trust
+
+---
+
+8. Economic Properties
+
+The system guarantees:
+
+- Fairness → Allocation not capital-dominated
+- Efficiency → Tokens go to active users
+- Stability → Controlled volatility
+- Security → Attack-resistant
+
+---
+
+9. Final Theorem
+
+«In PiRC-X, the optimal strategy for all rational participants is:
+
+To behave honestly, use the product, and maintain trust.»
+
+---
+
+10. Conclusion
+
+PiRC-X transforms token economics from:
+
+- Speculation-driven systems
+  ➡️ into
+- Utility-driven economic networks
+
+---
+
+End of Game Theory & Economic Model

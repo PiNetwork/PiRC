@@ -1,0 +1,249 @@
+PiRC-X: Trust Graph & Trust Score Specification
+
+Decentralized Trust Layer for Fair and Secure Token Allocation
+
+---
+
+1. Overview
+
+Trust Graph is a network-based model that evaluates the credibility, reliability, and relational integrity of users within the ecosystem.
+
+It transforms the Pi ecosystem from a flat participation model into a trust-weighted network, where each user’s influence is determined by their position and behavior within a graph of verified humans.
+
+«Core Principle:
+Trust is not declared — it is earned, measured, and propagated through the network.»
+
+---
+
+2. Motivation
+
+Traditional allocation systems fail due to:
+
+2.1 Sybil Attacks
+
+- Multiple fake identities inflate participation
+- Artificial amplification of influence
+
+2.2 Equal Weight Assumption
+
+- All users treated equally regardless of quality
+- High-value contributors undervalued
+
+2.3 Lack of Social Context
+
+- No understanding of relationships or reputation
+- No memory of past behavior
+
+---
+
+3. Trust Graph Model
+
+The ecosystem is modeled as a directed weighted graph:
+
+G = (V, E)
+
+Where:
+
+- V (Vertices): Verified users (PoH-enabled)
+- E (Edges): Trust relationships between users
+
+---
+
+3.1 Edge Definition
+
+Each edge represents a trust signal:
+
+E(i → j) = Trust Weight from user i to user j
+
+Sources of edges:
+
+- Referral relationships
+- Transaction history
+- Validation interactions (e.g., KYC validation)
+- App-level interactions
+
+---
+
+3.2 Edge Weight Components
+
+W(i,j) = f(
+  Interaction Frequency,
+  Transaction Value,
+  Validation Accuracy,
+  Relationship Duration
+)
+
+---
+
+4. Trust Score Calculation
+
+Each user is assigned a Trust Score (TS):
+
+TS(i) = α·DirectTrust(i) + β·NetworkTrust(i) + γ·BehaviorScore(i)
+
+Where:
+
+---
+
+4.1 Direct Trust
+
+Trust from immediate connections:
+
+DirectTrust(i) = Σ W(j,i)
+
+---
+
+4.2 Network Trust (Propagation)
+
+Trust inherited from the network:
+
+NetworkTrust(i) = Σ (TS(j) × W(j,i))
+
+👉 Similar to PageRank-style propagation
+
+---
+
+4.3 Behavior Score
+
+Derived from PoU and historical actions:
+
+BehaviorScore(i) = f(PoU, Consistency, Violations)
+
+---
+
+5. Trust Normalization
+
+To maintain fairness:
+
+TS_normalized = TS / max(TS)
+
+- Scales values between 0 and 1
+- Prevents extreme dominance
+
+---
+
+6. Anti-Sybil Mechanism
+
+Trust Graph provides strong Sybil resistance:
+
+---
+
+6.1 Entry Barrier (PoH Required)
+
+- Only verified humans enter graph
+- No anonymous nodes
+
+---
+
+6.2 Low-Trust Isolation
+
+- Fake accounts have weak/no edges
+- Minimal trust propagation
+
+---
+
+6.3 Cluster Detection
+
+AI identifies suspicious clusters:
+
+If cluster density high AND external trust low → flag as Sybil group
+
+---
+
+6.4 Trust Decay for Suspicious Behavior
+
+TS_new = TS_old × (1 − penalty_factor)
+
+---
+
+7. Temporal Trust Dynamics
+
+Trust evolves over time:
+
+TS(t) = TS × e^(−λt) + ActivityBoost
+
+- Inactive users lose trust
+- Active users gain trust
+
+---
+
+8. Trust Tiers
+
+Users are categorized:
+
+Tier| Trust Score| Effect
+Tier A| High| Maximum allocation boost
+Tier B| Medium| Standard participation
+Tier C| Low| Limited influence
+
+---
+
+9. Integration with PiRC-X
+
+Trust Score directly impacts:
+
+---
+
+9.1 Allocation
+
+Final Allocation = PoU × TS × PoH
+
+---
+
+9.2 Pricing Advantage
+
+Effective Price ∝ 1 / (1 + TS)
+
+- Higher trust → lower effective price
+
+---
+
+9.3 Anti-Dump Controls
+
+Max Sell Limit ∝ TS
+
+- Low trust → stricter limits
+
+---
+
+10. Security Properties
+
+10.1 Sybil Resistance
+
+- Requires real identity + network trust
+- Fake nodes cannot accumulate trust
+
+---
+
+10.2 Manipulation Resistance
+
+- Trust cannot be instantly gained
+- Requires time + real interaction
+
+---
+
+10.3 Network Integrity
+
+- Strong users reinforce each other
+- Weak clusters remain isolated
+
+---
+
+11. Key Outcomes
+
+- Fairer token distribution
+- Reduced bot and fake participation
+- Stronger ecosystem trust layer
+- Long-term user accountability
+
+---
+
+12. Conclusion
+
+The Trust Graph transforms the ecosystem into a living network of verified, trusted participants, where:
+
+«Influence is earned through contribution, validated by the network, and reinforced over time.»
+
+---
+
+Next: Dynamic Pricing & Allocation Engine

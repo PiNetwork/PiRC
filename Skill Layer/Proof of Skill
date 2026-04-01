@@ -1,0 +1,124 @@
+8.0 Skill Layer (Proof of Skill / Contribution Economy)
+
+Overview
+
+PiRC-X extends Proof of Utility (PoU) into a more granular and powerful system:
+
+«Proof of Skill (PoSkl) — a mechanism that rewards users based on verifiable contributions, capabilities, and productive actions within the ecosystem.»
+
+This concept is inspired by emerging decentralized labor/value systems and adapts them into the Pi ecosystem.
+
+---
+
+8.1 Motivation
+
+Current Web3 systems reward:
+
+- Capital (staking)
+- Passive holding
+- Speculation
+
+PiRC-X instead rewards:
+
+- Skill
+- Contribution
+- Real-world output
+
+---
+
+8.2 Skill Score Definition
+
+Each user i has:
+
+[
+S_i = f(TaskCompletion, Quality, Consistency, Impact)
+]
+
+Where:
+
+- TaskCompletion → jumlah tugas selesai
+- Quality → kualitas output
+- Consistency → stabilitas kontribusi
+- Impact → efek ke ekosistem
+
+---
+
+8.3 Skill Categories
+
+Skill layer supports multiple domains:
+
+Category| Example
+Development| Build dApps
+Validation| KYC / moderation
+AI Training| Labeling / feedback
+Content| Education / docs
+Economic| Liquidity / trading
+
+---
+
+8.4 Integration with Allocation
+
+Allocation becomes:
+
+[
+A_i = AI(C_i, U_i, T_i, S_i)
+]
+
+This introduces:
+
+- Merit-based distribution
+- Contribution-driven rewards
+- Anti-passive behavior
+
+---
+
+8.5 Skill Verification
+
+Skill scores are validated via:
+
+- On-chain activity
+- App-level metrics
+- Peer validation
+- AI behavior analysis
+
+---
+
+8.6 Anti-Exploitation Mechanism
+
+To prevent abuse:
+
+- Fake tasks → penalized
+- Low-quality output → discounted
+- Bot patterns → rejected
+
+---
+
+8.7 Economic Impact
+
+This transforms Pi into:
+
+- A contribution economy
+- A human-powered AI economy
+- A skill-based reward network
+
+---
+
+8.8 Strategic Alignment with Pi
+
+This aligns strongly with:
+
+- KYC validator system
+- Human-in-the-loop AI vision
+- App ecosystem growth
+- Real utility focus
+
+---
+
+8.9 Final Principle
+
+«In PiRC-X, value is not earned by holding —
+but by contributing, building, and participating meaningfully.»
+
+---
+
+End of Skill Layer Specification

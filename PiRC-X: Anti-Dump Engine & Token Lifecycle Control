@@ -1,0 +1,297 @@
+PiRC-X: Anti-Dump Engine & Token Lifecycle Control
+
+Stabilizing Token Markets Through Behavioral and Temporal Design
+
+---
+
+1. Overview
+
+The Anti-Dump Engine (ADE) and Token Lifecycle Control (TLC) form a unified system that governs how tokens are:
+
+- Unlocked
+- Held
+- Traded
+- Released into the market
+
+The goal is to prevent destructive sell pressure, while still preserving market freedom and liquidity.
+
+«Core Principle:
+Tokens should enter the market in alignment with utility, trust, and time — not speculation.»
+
+---
+
+2. Problem Statement
+
+Most token launches fail due to:
+
+2.1 Immediate Sell Pressure
+
+- Users dump tokens at TGE
+- No alignment with long-term utility
+
+2.2 Misaligned Incentives
+
+- Early participants extract value without contributing
+
+2.3 Liquidity Shock
+
+- Sudden supply influx destabilizes price
+
+---
+
+3. System Architecture
+
+ADE + TLC operate across three layers:
+
+---
+
+3.1 Unlock Layer
+
+Controls when tokens become available
+
+---
+
+3.2 Behavior Layer
+
+Controls how tokens can be used or sold
+
+---
+
+3.3 Market Interaction Layer
+
+Controls impact on liquidity and price
+
+---
+
+4. Progressive Unlock Mechanism
+
+4.1 Time-Based Vesting
+
+Unlocked(t) = TotalTokens × (1 − e^(−kt))
+
+- Gradual release over time
+- Prevents sudden supply shock
+
+---
+
+4.2 Activity-Based Unlock (Utility-Driven)
+
+UnlockBoost = f(PoU, ActivityLevel)
+
+- Active users unlock faster
+- Passive holders unlock slower
+
+---
+
+4.3 Trust-Based Acceleration
+
+UnlockRate ∝ Trust Score (TS)
+
+- High-trust users gain earlier access
+- Low-trust users face delayed unlocks
+
+---
+
+5. Sell Control Mechanisms
+
+---
+
+5.1 Dynamic Sell Limit
+
+MaxSell(i) = BaseLimit × TS × HoldingTimeFactor
+
+Where:
+
+- Higher trust → higher sell allowance
+- Longer holding → increased flexibility
+
+---
+
+5.2 Cooldown Periods
+
+Cooldown = f(SellVolume, Time)
+
+- Large sells trigger temporary restrictions
+- Prevents rapid dumping cycles
+
+---
+
+5.3 Velocity Control
+
+SellVelocity ≤ Threshold(TS)
+
+- Limits how fast tokens can be sold
+- Adaptive based on user profile
+
+---
+
+6. Behavioral Incentives
+
+---
+
+6.1 Hold-to-Earn Mechanism
+
+Rewards ∝ HoldingDuration × PoU
+
+- Users rewarded for holding AND using tokens
+
+---
+
+6.2 Utility Unlock Bonus
+
+- Tokens gain additional value when used in-app
+- Encourages circulation inside ecosystem
+
+---
+
+6.3 Penalty for Early Dumping
+
+Penalty = f(EarlySellRatio)
+
+- Reduced future allocation
+- Lower trust score
+
+---
+
+7. Liquidity Protection Layer
+
+---
+
+7.1 Adaptive Liquidity Buffer
+
+- Portion of tokens reserved for stabilization
+- Activated during high volatility
+
+---
+
+7.2 Price Impact Dampening
+
+EffectiveSellImpact = SellAmount × DampeningFactor
+
+- Large trades have reduced immediate impact
+
+---
+
+7.3 Gradual Market Exposure
+
+- Tokens enter circulation in controlled waves
+- Prevents sudden liquidity imbalance
+
+---
+
+8. Token Lifecycle Phases
+
+---
+
+Phase 1: Allocation
+
+- Tokens assigned but mostly locked
+
+---
+
+Phase 2: Controlled Unlock
+
+- Gradual release based on time + activity
+
+---
+
+Phase 3: Active Utility
+
+- Tokens actively used in ecosystem
+
+---
+
+Phase 4: Open Market
+
+- Full liquidity and free trading
+
+---
+
+9. Integration with PiRC-X
+
+---
+
+9.1 Allocation Link
+
+Allocation = PoU × TS × PoH
+
+---
+
+9.2 Unlock Link
+
+UnlockRate = f(PoU, TS, Time)
+
+---
+
+9.3 Sell Permission
+
+SellPower = f(TS, HoldingTime, Behavior)
+
+---
+
+10. Anti-Manipulation Features
+
+---
+
+10.1 Coordinated Dump Detection
+
+- AI identifies synchronized sell-offs
+
+---
+
+10.2 Wash Trading Prevention
+
+- Circular trades ignored in metrics
+
+---
+
+10.3 Reputation Impact
+
+TS_new = TS_old − DumpPenalty
+
+- Dumping reduces future advantages
+
+---
+
+11. System Outcomes
+
+11.1 Market Stability
+
+- Reduced volatility at TGE
+- Smoother price discovery
+
+---
+
+11.2 Long-Term Alignment
+
+- Incentives favor sustained participation
+
+---
+
+11.3 Fair Liquidity Distribution
+
+- No single actor can dominate sell pressure
+
+---
+
+11.4 Utility-Driven Circulation
+
+- Tokens flow into real usage, not speculation
+
+---
+
+12. Conclusion
+
+The Anti-Dump Engine and Token Lifecycle Control transform token behavior from:
+
+«“Acquire → Dump”
+into
+“Acquire → Use → Earn → Sustain”»
+
+By aligning unlocks, selling power, and incentives with trust and utility:
+
+«The system protects itself from within.»
+
+---
+
+Next: Full System Architecture & End-to-End Flow

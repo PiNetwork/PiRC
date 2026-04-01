@@ -1,0 +1,249 @@
+PiRC-X: Proof of Utility (PoU) Specification
+
+Measuring Real Contribution in a Utility-Driven Ecosystem
+
+---
+
+1. Overview
+
+Proof of Utility (PoU) is the core mechanism that quantifies real user contribution within the ecosystem.
+
+Unlike traditional engagement metrics, PoU evaluates meaningful, value-generating actions performed by users inside applications.
+
+«Core Principle:
+Only actions that create real utility should influence token allocation.»
+
+---
+
+2. Design Objectives
+
+PoU is designed to achieve the following:
+
+2.1 Eliminate Fake Engagement
+
+- Ignore low-value signals (clicks, views, passive activity)
+- Prevent farming and scripted interactions
+
+2.2 Capture Real Economic Activity
+
+- Measure actions that generate:
+  - value
+  - transactions
+  - usage depth
+
+2.3 Align Incentives with Utility
+
+- Reward users who actively use and contribute to applications
+- Encourage long-term participation
+
+---
+
+3. PoU Signal Categories
+
+PoU aggregates multiple categories of utility signals:
+
+---
+
+3.1 On-Chain Activity (Primary Signal)
+
+Measures real blockchain usage:
+
+- Transactions using Pi
+- Smart contract interactions
+- Payments within apps
+- Liquidity participation
+
+OnChainScore ∝ Transaction Volume × Frequency × Consistency
+
+---
+
+3.2 In-App Utility Usage
+
+Measures depth of product interaction:
+
+- Feature usage (core functions, not UI clicks)
+- Completion of meaningful workflows
+- Consumption of services
+
+AppUsageScore ∝ FeatureDepth × Session Quality × Completion Rate
+
+---
+
+3.3 Economic Contribution
+
+Measures value added to the ecosystem:
+
+- Payments to other users
+- Purchases of services/products
+- Contribution to app economy
+
+EconomicScore ∝ Value Transferred × Utility Relevance
+
+---
+
+3.4 Retention & Consistency
+
+Measures sustained engagement:
+
+- Active days over time
+- Repeated usage patterns
+- Long-term participation
+
+RetentionScore ∝ ActiveDays × UsageConsistency
+
+---
+
+3.5 Contribution Quality (Optional Advanced Layer)
+
+Measures qualitative contribution:
+
+- Reviews, feedback
+- Validator participation
+- Content or service creation
+
+---
+
+4. PoU Composite Formula
+
+All signals are combined into a unified score:
+
+PoU = w1·OnChainScore 
+    + w2·AppUsageScore 
+    + w3·EconomicScore 
+    + w4·RetentionScore 
+    + w5·ContributionScore
+
+Where:
+
+- wₙ = dynamic weights based on ecosystem priorities
+
+---
+
+5. Normalization & Scaling
+
+To ensure fairness:
+
+5.1 Score Normalization
+
+- All components scaled to [0,1]
+- Prevents dominance by whales
+
+5.2 Logarithmic Dampening
+
+AdjustedScore = log(1 + RawScore)
+
+- Reduces disproportionate advantage
+- Encourages broader participation
+
+---
+
+6. Anti-Manipulation Mechanisms
+
+PoU includes built-in protections:
+
+---
+
+6.1 Fake Activity Filtering
+
+- Detect repetitive, low-entropy behavior
+- Ignore non-meaningful interactions
+
+---
+
+6.2 Sybil Resistance Integration
+
+- Combined with PoH (Proof of Human)
+- Duplicate accounts invalidated
+
+---
+
+6.3 Wash Activity Detection
+
+- Identify circular transactions
+- Discount self-generated volume
+
+ValidActivity = TotalActivity − SuspiciousActivity
+
+---
+
+6.4 Behavioral Anomaly Detection (AI Layer)
+
+- Detect abnormal spikes
+- Flag unnatural patterns
+
+---
+
+7. Time Weighting (Decay Function)
+
+Recent activity is more valuable:
+
+PoU(t) = PoU × e^(−λt)
+
+Where:
+
+- t = time since activity
+- λ = decay factor
+
+👉 Ensures:
+
+- Active users are prioritized
+- Inactive accounts lose influence
+
+---
+
+8. PoU Tiers (Optional Optimization)
+
+Users can be grouped into tiers:
+
+Tier| Description| Effect
+Tier 1| High Utility| Maximum allocation efficiency
+Tier 2| Moderate Utility| متوسط
+Tier 3| Low Utility| Limited allocation
+
+---
+
+9. System Integration
+
+PoU integrates directly with:
+
+- Allocation Engine (FAS)
+- Dynamic Pricing
+- Reward Distribution
+- Anti-Dump Mechanisms
+
+Final Allocation = PoU × Trust × PoH
+
+---
+
+10. Key Outcomes
+
+10.1 Fair Distribution
+
+- Rewards real contributors
+- Eliminates low-value actors
+
+10.2 Strong Utility Alignment
+
+- Tokens flow to active users
+- Drives real product usage
+
+10.3 Economic Sustainability
+
+- Reduces speculation
+- Encourages ecosystem growth
+
+---
+
+11. Conclusion
+
+Proof of Utility transforms token allocation from:
+
+«"Who participates the most"
+into
+"Who contributes the most value"»
+
+By anchoring tokenomics in real activity, PoU ensures that the ecosystem evolves toward sustainable, utility-driven growth.
+
+---
+
+Next: Trust Graph & Trust Score Specification

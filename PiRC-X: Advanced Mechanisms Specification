@@ -1,0 +1,308 @@
+PiRC-X: Advanced Mechanisms Specification
+
+Utility-Driven • Trust-Based • AI-Optimized Token Economy
+
+---
+
+1.2 PROOF OF UTILITY (PoU) — Replacing Engagement
+
+Overview
+
+Proof of Utility (PoU) replaces traditional engagement metrics with a real economic activity model.
+
+«Principle:
+Value is earned through actual utility contribution, not passive interaction.»
+
+---
+
+Core Metrics
+
+- Transaction Depth (TD) → volume & frequency of meaningful transactions
+- In-App Usage (IU) → feature interaction quality
+- Economic Contribution (EC) → value created within ecosystem
+
+---
+
+PoU Formula
+
+PoU = w1·TD + w2·IU + w3·EC
+
+Where:
+
+- "w1, w2, w3" = dynamic weights (adjusted by system)
+
+---
+
+Impact
+
+- Eliminates fake engagement
+- Rewards real users
+- Aligns tokens with product usage
+
+---
+
+2.3 PROOF OF HUMAN (PoH)
+
+Overview
+
+Proof of Human ensures one real human = one economic identity.
+
+---
+
+Components
+
+- KYC Verification
+- Device & behavior fingerprinting
+- Multi-layer validation
+
+---
+
+Function
+
+Eligibility = 1 (Verified Human) | 0 (Invalid)
+
+---
+
+Impact
+
+- Eliminates bot participation
+- Foundation of fairness
+- Enables trust-based economy
+
+---
+
+3.4 TRUST GRAPH (ANTI-SYBIL ENGINE)
+
+Overview
+
+Trust Graph is a network-based reputation system that assigns Trust Score (TS).
+
+---
+
+Trust Signals
+
+- Interaction quality
+- Network relationships
+- Behavioral consistency
+
+---
+
+Trust Score Formula
+
+TS(i) = α·DirectTrust + β·NetworkTrust + γ·BehaviorScore
+
+---
+
+Anti-Sybil Mechanism
+
+- Low-trust clusters are suppressed
+- Isolated accounts have minimal influence
+- Fake networks collapse naturally
+
+---
+
+Impact
+
+- Organic Sybil resistance
+- Reputation-based power
+- Long-term trust accumulation
+
+---
+
+4.6 SMART CONTRACT LAUNCHPAD (PROTO 20 READY)
+
+Overview
+
+Built on Protocol 20, enabling programmable token launches.
+
+---
+
+Smart Contract Modules
+
+- Allocation Contract
+- Liquidity Lock Contract
+- Vesting Contract
+- Escrow Contract
+
+---
+
+Key Features
+
+- Immutable liquidity lock
+- Automated distribution
+- Transparent execution
+
+---
+
+Example Logic
+
+If (PoH && Stake && PoU > Threshold)
+→ Eligible for Allocation
+
+---
+
+Impact
+
+- Trustless execution
+- Developer-ready infrastructure
+- Scalable launch mechanism
+
+---
+
+5.7 ANTI-DUMP ENGINE
+
+Overview
+
+Prevents destructive sell pressure post-TGE.
+
+---
+
+Mechanisms
+
+1. Progressive Unlock
+
+Unlock(t) = Total × (1 − e^(−kt))
+
+2. Sell Limits
+
+MaxSell = f(TS, HoldingTime)
+
+3. Cooldown System
+
+- Large sell → temporary restriction
+
+---
+
+Behavioral Penalty
+
+TS_new = TS_old − DumpPenalty
+
+---
+
+Impact
+
+- Stabilizes price
+- Encourages holding
+- Reduces volatility
+
+---
+
+6.8 AI ALLOCATION ENGINE (LEVEL DEWA)
+
+Overview
+
+AI-driven system that optimizes allocation dynamically.
+
+---
+
+Inputs
+
+- PoU
+- Trust Score (TS)
+- Demand signals
+- Market conditions
+
+---
+
+Allocation Formula
+
+Allocation(i) = f(PoU, TS, Demand, Behavior)
+
+---
+
+AI Capabilities
+
+- Pattern detection
+- Anti-manipulation filtering
+- Adaptive weight tuning
+
+---
+
+Output
+
+- Fair allocation
+- Personalized pricing
+- Optimized distribution
+
+---
+
+Impact
+
+- Eliminates whales dominance
+- Prevents gaming system
+- Evolves with ecosystem
+
+---
+
+7.9 LIQUIDITY MODEL (ENHANCED)
+
+Overview
+
+Liquidity is permanently locked and structurally protected.
+
+---
+
+Core Structure
+
+LP = (Total Pi, Token Supply)
+
+- 100% Pi → Liquidity Pool
+- Matching tokens → locked
+
+---
+
+Key Enhancements
+
+1. Immutable Liquidity
+
+- No withdrawal by project
+
+2. Adaptive Liquidity Buffer
+
+- Activated during volatility
+
+3. Price Floor Protection
+
+pfloor ≈ 0.2 – 0.25 × plist
+
+---
+
+Impact
+
+- No rug pull
+- Stable market foundation
+- Predictable liquidity depth
+
+---
+
+FINAL SYNTHESIS
+
+PiRC-X transforms token launch from:
+
+«Speculation System
+into
+Utility-Based Economic Engine»
+
+---
+
+Unified Formula
+
+Value = f(PoH, PoU, TS, AI, Time)
+
+---
+
+Final Outcome
+
+- Utility defines rewards
+- Trust defines power
+- AI ensures fairness
+- Liquidity ensures stability
+
+---
+
+FINAL STATEMENT
+
+«PiRC-X is not just an upgrade.
+It is the foundation of a self-regulating digital economy.»
+
+---

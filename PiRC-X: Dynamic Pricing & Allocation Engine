@@ -1,0 +1,287 @@
+PiRC-X: Dynamic Pricing & Allocation Engine
+
+Adaptive Token Distribution and Fair Market Formation
+
+---
+
+1. Overview
+
+The Dynamic Pricing & Allocation Engine (DPAE) is the economic core of PiRC-X that determines:
+
+- How tokens are allocated
+- At what effective price participants acquire tokens
+- How fairness, demand, and utility are balanced
+
+Unlike static models, DPAE introduces a fully adaptive system that responds to:
+
+- User utility (PoU)
+- Trust Score (TS)
+- Market demand
+- Participation behavior
+
+«Core Principle:
+Price and allocation must dynamically reflect real value contribution and network trust.»
+
+---
+
+2. Motivation
+
+Traditional launchpad models (including baseline PiRC) suffer from:
+
+2.1 Static Pricing
+
+- Single clearing price ignores user quality
+- No reward differentiation beyond simple tiers
+
+2.2 Inefficient Allocation
+
+- High-value users treated equally with low-value users
+- Weak incentive alignment
+
+2.3 Market Instability
+
+- Poor initial price discovery
+- High volatility post-TGE
+
+---
+
+3. Core Architecture
+
+DPAE consists of three interacting layers:
+
+---
+
+3.1 Allocation Layer
+
+Determines how many tokens each user receives
+
+---
+
+3.2 Pricing Layer
+
+Determines effective price per participant
+
+---
+
+3.3 Market Formation Layer
+
+Ensures stable liquidity and price discovery
+
+---
+
+4. Allocation Model
+
+4.1 Base Allocation
+
+Each user receives a base allocation:
+
+BaseAllocation(i) = PiCommitted(i) / p_list
+
+---
+
+4.2 Weighted Allocation
+
+Adjusted by utility and trust:
+
+WeightedAllocation(i) = BaseAllocation × (1 + α·PoU + β·TS)
+
+Where:
+
+- α, β = weighting parameters
+
+---
+
+4.3 Normalized Allocation
+
+To ensure total supply consistency:
+
+FinalAllocation(i) = WeightedAllocation(i) / Σ WeightedAllocation
+
+---
+
+5. Dynamic Pricing Model
+
+5.1 Base Listing Price
+
+p_list = Total Pi Committed / Token Supply
+
+---
+
+5.2 Effective Price per User
+
+p_eff(i) = p_list / (1 + γ·PoU + δ·TS)
+
+Where:
+
+- Higher PoU and TS → lower effective price
+- Lower PoU and TS → closer to base price
+
+---
+
+5.3 Price Bounds
+
+To maintain stability:
+
+p_min ≤ p_eff(i) ≤ p_list
+
+---
+
+6. Demand-Sensitive Adjustment
+
+The system adapts to demand:
+
+---
+
+6.1 Oversubscription Handling
+
+If demand exceeds supply:
+
+AdjustmentFactor = Supply / Demand
+
+- Reduces allocations proportionally
+- Preserves fairness
+
+---
+
+6.2 Undersubscription Handling
+
+If demand is low:
+
+- Increase incentives (discount range)
+- Expand allocation pool dynamically
+
+---
+
+7. Time-Based Pricing Curve
+
+Pricing evolves during allocation phase:
+
+p(t) = p_list × (1 − e^(−kt))
+
+- Early participants benefit more
+- Late participants pay closer to listing price
+
+---
+
+8. Fairness Mechanisms
+
+---
+
+8.1 Whale Dampening
+
+AdjustedCommit = log(1 + PiCommitted)
+
+- Prevents large holders from dominating
+
+---
+
+8.2 Diminishing Returns
+
+- Additional commitment yields decreasing marginal advantage
+
+---
+
+8.3 Participation Cap
+
+- Maximum allocation per user enforced
+
+---
+
+9. Integration with Trust & Utility
+
+Full integration with PiRC-X model:
+
+Final Allocation = f(PoU × TS × PoH)
+
+Effective Price = f(PoU, TS, Demand)
+
+---
+
+10. Market Formation Layer
+
+---
+
+10.1 Liquidity Initialization
+
+- All committed Pi → liquidity pool
+- Matching token supply added
+
+LP = (Total Pi, Token Liquidity)
+
+---
+
+10.2 Price Anchoring
+
+- Initial LP price aligned with average effective price
+
+---
+
+10.3 Volatility Dampening
+
+- Controlled release of tokens
+- Gradual market exposure
+
+---
+
+11. Anti-Manipulation Features
+
+---
+
+11.1 Strategic Delay Prevention
+
+- No advantage from last-minute large commits
+
+---
+
+11.2 Coordinated Behavior Detection
+
+- AI flags synchronized activity patterns
+
+---
+
+11.3 Price Gaming Resistance
+
+- Dynamic adjustments neutralize manipulation attempts
+
+---
+
+12. System Outcomes
+
+12.1 Fair Pricing
+
+- Users pay based on contribution quality
+
+---
+
+12.2 Efficient Allocation
+
+- Tokens flow to high-value participants
+
+---
+
+12.3 Stable Market Launch
+
+- Reduced post-TGE volatility
+
+---
+
+12.4 Incentive Alignment
+
+- Encourages real usage, not speculation
+
+---
+
+13. Conclusion
+
+The Dynamic Pricing & Allocation Engine transforms token distribution into a self-adjusting economic system, where:
+
+- Price reflects contribution
+- Allocation reflects trust
+- Market reflects real demand
+
+«Result:
+A launchpad that is not only fair—but economically intelligent.»
+
+---
+
+Next: Anti-Dump Engine & Token Lifecycle Control
