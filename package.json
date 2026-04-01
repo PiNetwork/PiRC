@@ -1,0 +1,14 @@
+{
+  "name": "pirc-ai-oracle",
+  "version": "1.0.0",
+  "description": "AI-powered health monitoring for Pi Testnet RPC",
+  "main": "src/app.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/app.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-fetch": "^3.3.2"
+  }
+}

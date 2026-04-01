@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pirc-ai-oracle
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pirc-ai-oracle
+  template:
+    metadata:
+      labels:
+        app: pirc-ai-oracle
+    spec:
+      containers:
+        - name: pirc-ai-oracle
+          image: pirc-ai-oracle:latest
+          ports:
+            - containerPort: 3000
