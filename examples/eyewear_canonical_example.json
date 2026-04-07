@@ -1,0 +1,30 @@
+{
+  "schema_version": "0.3",
+  "pid": "a1b2c3d4e5f678901234567890abcdef12345678",
+  "category": "eyewear",
+  "product_name": "Luxury Polarized Sunglasses Model X",
+  "manufacturer": {
+    "id": "LUXE-OPTICS-001",
+    "name": "Luxe Optics",
+    "country": "Italy"
+  },
+  "timestamp_registered": "2026-03-25T15:00:00Z",
+  "verification": {
+    "method": "NFC",
+    "security_level": "high"
+  },
+  "auth": {
+    "signature": "0x1234...abcd (ECDSA)",
+    "public_key_ref": "issuer:luxoptics-public-key",
+    "chip_uid": "04:AB:CD:EF:12:34:56:78",
+    "signed_payload": "signed(pid + chip_uid)"
+  },
+  "metadata_uri": "https://pi-rwa.example/metadata/eyewear-001",
+  "eyewear": {
+    "lens_type": "polarized",
+    "frame_material": "titanium",
+    "serial_number": "LX-2026-001234",
+    "uv_protection": "UV400",
+    "certifications": ["ISO 12312-2", "Brand Warranty"]
+  }
+}

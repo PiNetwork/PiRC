@@ -1,0 +1,45 @@
+name: Auto-Update PiRC Table in README
+
+on:
+  push:
+    paths:
+      - 'docs/**'
+      - 'scripts/generate_pirc_table.py'
+      - 'README.md'
+  schedule:
+    - cron: '0 6 * * *'     # Daily at 6 AM UTC
+  workflow_dispatch:        # Can be triggered manually
+
+jobs:
+  update-table:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Generate PiRC Table
+        run: |
+          python scripts/generate_pirc_table.py > table.md
+          sed -i '/<!-- TABLE_START -->/,/<!-- TABLE_END -->/c\<!-- TABLE_START -->\n'"$(cat table.md)"'\n<!-- TABLE_END -->' README.md
+
+      - name: Commit and Push if changed
+        run: |
+          git config user.name "PiRC-AutoBot"
+          git config user.email "bot@ze0ro99.dev"
+          if git diff --quiet README.md; then
+            echo "No changes to README.md"
+          else
+            git add README.md
+            git commit -m "chore: auto-update PiRC proposals table [skip ci]"
+            git push
+          fi
