@@ -1,0 +1,8 @@
+extensions/rwa-conceptual-auth-extension/
+├── README.md                          ← Main professional README
+├── rwa_authentication_framework.md    ← Full conceptual framework (#72)
+├── rwa_product_auth_schema.json       ← Product identity registration schema
+├── verification_demo.py               ← Ready-to-run demo script (Python)
+├── integration_with_pirc.md           ← Integration guide with PiRC & Pi Network
+└── diagrams/
+    └── rwa_workflow.mmd               ← Mermaid diagram (auto-renders on GitHub)

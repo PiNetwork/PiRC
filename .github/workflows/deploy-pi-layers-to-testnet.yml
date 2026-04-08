@@ -1,0 +1,83 @@
+name: Deploy PiRC-207 7 Layers to Stellar Testnet
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install System Dependencies + Rust + Stellar CLI
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config libdbus-1-dev libudev-dev libssl-dev build-essential
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+          source "$HOME/.cargo/env"
+          rustup target add wasm32v1-none
+          cargo install --locked stellar-cli
+          echo "✅ Stellar CLI installed: $(stellar --version)"
+
+      - name: Deploy all 7 PiRC-207 Colored Token Layers
+        env:
+          STELLAR_SECRET: ${{ secrets.STELLAR_TESTNET_SECRET }}
+        run: |
+          set -e
+
+          echo "🚀 Starting PROFESSIONAL deployment of 7 PiRC-207 Colored Token Layers..."
+
+          # === Setup identity once (NON-INTERACTIVE) ===
+          echo "🔑 Adding deployer identity..."
+          echo "$STELLAR_SECRET" | stellar keys add deployer --secret-key
+          SOURCE_ACCOUNT=$(stellar keys address deployer)
+          echo "📌 Deployer public key: $SOURCE_ACCOUNT"
+
+          for dir in contracts/soroban/pirc-207-*-token; do
+            color=$(basename "$dir" | sed 's/pirc-207-//;s/-token//')
+            echo "🔨 Deploying $color layer..."
+
+            cd "$dir"
+
+            # Optimized release profile
+            echo "" >> Cargo.toml
+            echo "[profile.release]" >> Cargo.toml
+            echo "opt-level = \"z\"" >> Cargo.toml
+            echo "overflow-checks = true" >> Cargo.toml
+            echo "debug = false" >> Cargo.toml
+            echo "strip = \"symbols\"" >> Cargo.toml
+            echo "debug-assertions = false" >> Cargo.toml
+            echo "panic = \"abort\"" >> Cargo.toml
+            echo "codegen-units = 1" >> Cargo.toml
+            echo "lto = true" >> Cargo.toml
+
+            stellar contract build
+
+            CONTRACT_ID=$(stellar contract deploy \
+              --wasm target/wasm32v1-none/release/*.wasm \
+              --source deployer \
+              --network testnet)
+
+            echo "✅ Deployed $color → $CONTRACT_ID"
+
+            stellar contract invoke \
+              --id "$CONTRACT_ID" \
+              --source deployer \
+              --network testnet \
+              -- initialize --admin "$SOURCE_ACCOUNT" || true
+
+            VALUE=$(stellar contract invoke \
+              --id "$CONTRACT_ID" \
+              --source deployer \
+              --network testnet \
+              -- get_value 2>/dev/null || echo "N/A")
+
+            echo "📊 $color get_value() = $VALUE"
+
+            cd - > /dev/null
+          done
+
+          echo ""
+          echo "🎉 ALL 7 LAYERS ARE NOW LIVE ON STELLAR TESTNET!"
+          echo "Contract IDs printed above — copy them for PiNetwork #72."
