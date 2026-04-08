@@ -1,0 +1,28 @@
+[package]
+name = "pirc209-soroban"
+version = "1.0.0"
+edition = "2021"
+license = "PiOS"
+description = "PiRC-209 Sovereign Decentralized Identity & Verifiable Credentials (Soroban implementation)"
+repository = "https://github.com/Ze0ro99/PiRC"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+soroban-sdk = "20.5.0"
+
+[dev-dependencies]
+soroban-sdk = { version = "20.5.0", features = ["testutils"] }
+
+[profile.release]
+opt-level = "s"
+overflow-checks = true
+debug = false
+strip = "symbols"
+panic = "abort"
+codegen-units = 1
+lto = true
+
+[profile.dev]
+overflow-checks = true

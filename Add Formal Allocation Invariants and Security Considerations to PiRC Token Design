@@ -1,0 +1,98 @@
+## Summary
+
+This PR improves the formal specification of the PiRC ecosystem token design by introducing:
+
+1. Allocation invariants to guarantee economic consistency
+2. Security considerations describing adversarial strategies
+3. Deterministic allocation properties to improve reproducibility
+
+These additions do not modify the core token design, but clarify mathematical and security assumptions underlying the allocation model.
+
+The goal is to strengthen the PiRC specification so that ecosystem builders and researchers can implement allocation logic in a deterministic and verifiable manner.
+
+---
+
+## Motivation
+
+Token allocation mechanisms in Web3 systems are frequently subject to:
+
+- manipulation through activity inflation
+- ambiguity in implementation
+- non-deterministic allocation logic
+
+Adding explicit invariants and security considerations improves:
+
+- reproducibility across implementations
+- security analysis
+- developer understanding of allocation rules
+
+This aligns with best practices seen in formal protocol specifications.
+
+---
+
+## Changes
+
+1. Allocation Invariants
+
+Introduces formal conditions that must hold for any valid allocation outcome:
+
+- Emission Conservation
+- Liquidity Conservation
+- Monotonicity
+- Determinism
+
+These constraints ensure predictable token distribution outcomes.
+
+---
+
+2. Security Considerations
+
+Adds a threat model describing possible adversarial behaviors including:
+
+- engagement bursts
+- metric concentration
+- backend manipulation
+- replay attacks
+
+Each threat is paired with a mitigation strategy.
+
+---
+
+3. Deterministic Allocation Properties
+
+Clarifies that given identical inputs:
+
+- participant contributions
+- engagement tiers
+- allocation parameters
+
+the resulting token distribution must always be identical.
+
+This property enables:
+
+- deterministic verification
+- reproducible simulations
+- formal analysis of allocation fairness.
+
+---
+
+
+## Impact
+No behavioral changes to the PiRC design.
+
+The PR only improves the clarity and formal robustness of the specification, helping ecosystem developers implement token allocation mechanisms more reliably.
+
+---
+
+## Notes
+
+This contribution aims to strengthen the formal specification of the PiRC ecosystem token model and help ecosystem developers implement deterministic and secure allocation mechanisms.
+
+Feedback from the Pi Core Team and the community is welcome.
+---
+
+Author
+
+Contribution by community member and Pioneer.
+
+Feedback from the Pi Core Team and community is welcome.

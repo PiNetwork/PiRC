@@ -1,0 +1,15 @@
+name: Run Economic Simulation
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  simulate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Run agent simulation
+        run: python simulations/agent_model.py

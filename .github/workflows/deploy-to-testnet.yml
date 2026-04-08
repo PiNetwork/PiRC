@@ -1,0 +1,12 @@
+name: One-Click Testnet Deployment
+on:
+  workflow_dispatch: # Manual trigger for Pi Core Team
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Deploy Protocol
+        run: bash deployment/one-click-deploy.sh
+
