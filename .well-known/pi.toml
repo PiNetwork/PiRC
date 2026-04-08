@@ -1,0 +1,62 @@
+ACCOUNTS=["GA3ECRFJ6SO5BW6NEIKW3ACJXNG5UNBTLRRXWC742NHUEDV6KL3RNEN6", "GB7EKKXHOCCMVN5SQNJ6IVILY53KSVH2DPMJ66P6272CWCJO7DUJMFVZ"]
+
+[DOCUMENTATION]
+ORG_NAME="PiRC-207 Sovereign System"
+ORG_URL="https://ze0ro99.github.io/PiRC"
+
+[[CURRENCIES]]
+code="PURPLE"
+issuer="GA3ECRFJ6SO5BW6NEIKW3ACJXNG5UNBTLRRXWC742NHUEDV6KL3RNEN6"
+display_decimals=7
+name="PiRC-207 Registry L0"
+desc="Protocol Registry & AI Verification Foundation. | Registry: CAEUNHEUXACISTVHICFNISFRTRVSK5IALA3H5MUT7P4JKU5L3IPSKG4B"
+image="https://ze0ro99.github.io/PiRC/images/purple.png"
+
+[[CURRENCIES]]
+code="GOLD"
+issuer="GA3ECRFJ6SO5BW6NEIKW3ACJXNG5UNBTLRRXWC742NHUEDV6KL3RNEN6"
+display_decimals=7
+name="PiRC-207 Reserve L1"
+desc="Sovereign Reserve Asset | Parity Target 314,159. | Registry: CAEUNHEUXACISTVHICFNISFRTRVSK5IALA3H5MUT7P4JKU5L3IPSKG4B"
+image="https://ze0ro99.github.io/PiRC/images/gold.png"
+
+[[CURRENCIES]]
+code="YELLOW"
+issuer="GA3ECRFJ6SO5BW6NEIKW3ACJXNG5UNBTLRRXWC742NHUEDV6KL3RNEN6"
+display_decimals=7
+name="PiRC-207 Utility L2"
+desc="High-Velocity Tier for Attention-Based Economy. | Registry: CAEUNHEUXACISTVHICFNISFRTRVSK5IALA3H5MUT7P4JKU5L3IPSKG4B"
+image="https://ze0ro99.github.io/PiRC/images/yellow.png"
+
+[[CURRENCIES]]
+code="ORANGE"
+issuer="GA3ECRFJ6SO5BW6NEIKW3ACJXNG5UNBTLRRXWC742NHUEDV6KL3RNEN6"
+display_decimals=7
+name="PiRC-207 Settlement L3"
+desc="Price Credibility Hub | AI Stabilization Active. | Registry: CAEUNHEUXACISTVHICFNISFRTRVSK5IALA3H5MUT7P4JKU5L3IPSKG4B"
+image="https://ze0ro99.github.io/PiRC/images/orange.png"
+
+[[CURRENCIES]]
+code="BLUE"
+issuer="GA3ECRFJ6SO5BW6NEIKW3ACJXNG5UNBTLRRXWC742NHUEDV6KL3RNEN6"
+display_decimals=7
+name="PiRC-207 Liquidity L4"
+desc="Protocol AMM Guardrail & Stability Layer. | Registry: CAEUNHEUXACISTVHICFNISFRTRVSK5IALA3H5MUT7P4JKU5L3IPSKG4B"
+image="https://ze0ro99.github.io/PiRC/images/blue.png"
+
+[[CURRENCIES]]
+code="GREEN"
+issuer="GA3ECRFJ6SO5BW6NEIKW3ACJXNG5UNBTLRRXWC742NHUEDV6KL3RNEN6"
+display_decimals=7
+name="PiRC-207 PiCash L5"
+desc="Ecosystem Cash Benchmark | P2P Utility. | Registry: CAEUNHEUXACISTVHICFNISFRTRVSK5IALA3H5MUT7P4JKU5L3IPSKG4B"
+image="https://ze0ro99.github.io/PiRC/images/green.png"
+
+[[CURRENCIES]]
+code="RED"
+issuer="GA3ECRFJ6SO5BW6NEIKW3ACJXNG5UNBTLRRXWC742NHUEDV6KL3RNEN6"
+display_decimals=7
+name="PiRC-207 Governance L6"
+desc="DAO Governance Matrix & AI Auth Extension. | Registry: CAEUNHEUXACISTVHICFNISFRTRVSK5IALA3H5MUT7P4JKU5L3IPSKG4B"
+image="https://ze0ro99.github.io/PiRC/images/red.png"
+

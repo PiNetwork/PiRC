@@ -1,0 +1,18 @@
+{
+  "schemaVersion": "202.1",
+  "type": "utility_gate",
+  "properties": {
+    "pioneerAddress": {
+      "type": "string"
+    },
+    "engagementScore": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "threshold": {
+      "type": "integer",
+      "default": 5000
+    }
+  },
+  "required": ["pioneerAddress", "engagementScore"]
+}
