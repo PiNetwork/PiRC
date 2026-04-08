@@ -1,0 +1,21 @@
+{
+  "schemaVersion": "206.1",
+  "type": "cross_layer_dashboard",
+  "properties": {
+    "layers": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 7,
+      "maxItems": 7
+    },
+    "compliance": {
+      "type": "string"
+    },
+    "engagementScore": {
+      "type": "string"
+    }
+  },
+  "required": ["layers", "compliance", "engagementScore"]
+}
