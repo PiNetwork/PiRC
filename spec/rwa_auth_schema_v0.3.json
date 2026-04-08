@@ -1,0 +1,31 @@
+{
+  "schema_version": "0.3",
+  "pid": "string (required, hash-based)",
+  "category": "string (required, e.g. eyewear, luxury, electronics)",
+  "product_name": "string (required)",
+  "manufacturer": {
+    "id": "string (required)",
+    "name": "string (required)",
+    "country": "string (optional)"
+  },
+  "timestamp_registered": "ISO8601 (required)",
+  "verification": {
+    "method": "QR | NFC | HYBRID (required)",
+    "security_level": "low | medium | high (required)"
+  },
+  "auth": {
+    "signature": "string (required, ECDSA or Ed25519)",
+    "public_key_ref": "string (required, issuer reference)",
+    "chip_uid": "string (required only for NFC)",
+    "signed_payload": "string (required for NFC: sign(pid + chip_uid))"
+  },
+  "metadata_uri": "string (optional, off-chain reference)",
+  "confidence_score_logic": "Abstract: 0-100 based on signature validity + issuer verification + physical binding strength",
+  "eyewear": {
+    "lens_type": "string (optional)",
+    "frame_material": "string (optional)",
+    "serial_number": "string (optional)",
+    "uv_protection": "string (optional)",
+    "certifications": ["string (optional)"]
+  }
+}

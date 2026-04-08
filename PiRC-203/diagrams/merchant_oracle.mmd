@@ -1,0 +1,6 @@
+graph TD
+    A[Kraken feed] --> D[Median oracle]
+    B[KuCoin feed] --> D
+    C[Binance feed] --> D
+    D --> E[Apply phi risk band]
+    E --> F[Merchant settlement price]
