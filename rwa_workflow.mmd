@@ -1,0 +1,8 @@
+flowchart TD
+    A[QR / NFC Scan] --> B[Load Product Identity JSON]
+    B --> C[Fetch Blockchain Metadata]
+    C --> D{Verify Hash?}
+    D -->|Yes| E[Return Tier + Authenticity Proof]
+    D -->|No| F[Flag as Counterfeit]
+    E --> G[Display to Buyer in Pi App]
+    style A fill:#4ade80

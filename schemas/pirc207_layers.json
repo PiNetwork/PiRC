@@ -1,0 +1,44 @@
+{
+  "purple": {
+    "name": "PurpleMain",
+    "sym": "\u03c0-PURPLE",
+    "val": 1,
+    "desc": "Main Mined Currency (10M micro = 1 Pi)"
+  },
+  "gold": {
+    "name": "Gold314159",
+    "sym": "\u03c0-GOLD",
+    "val": 314159,
+    "desc": "GCV Anchor Layer (10 GCV = 1 Mined Pi)"
+  },
+  "yellow": {
+    "name": "Yellow31141",
+    "sym": "\u03c0-YELLOW",
+    "val": 31141,
+    "desc": "Power & Energy Utility"
+  },
+  "orange": {
+    "name": "Orange3141",
+    "sym": "\u03c0-ORANGE",
+    "val": 3141,
+    "desc": "Creative & Community Flow"
+  },
+  "blue": {
+    "name": "Blue314",
+    "sym": "\u03c0-BLUE",
+    "val": 314,
+    "desc": "Banking & Institutional Settlement"
+  },
+  "green": {
+    "name": "Green314",
+    "sym": "\u03c0-GREEN",
+    "val": 3.14,
+    "desc": "PiCash Retail Utility"
+  },
+  "red": {
+    "name": "RedGov",
+    "sym": "\u03c0-RED",
+    "val": 1,
+    "desc": "Governance & Voting Weight"
+  }
+}
