@@ -1,0 +1,21 @@
+{
+  "protocol": "PiRC2",
+  "version": "2.0",
+  "asset_classification": {
+    "type": "Mined_Pi",
+    "wcf_multiplier": 10000000,
+    "liquidity_status": "Locked_Escrow",
+    "provenance": "Original_Mining_Phase"
+  },
+  "utility_sectors": [
+    "Retail",
+    "Gaming",
+    "Advertising",
+    "RealEstate"
+  ],
+  "compliance": {
+    "product_first": true,
+    "zero_inflation": true
+  }
+}
+
