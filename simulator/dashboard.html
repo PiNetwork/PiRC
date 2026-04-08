@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PiRC-101: Justice Engine Dashboard</title>
+    <style>
+        body { background: #0b0e11; color: #eaeaeb; font-family: 'Inter', sans-serif; text-align: center; }
+        .container { border: 1px solid #333; display: inline-block; padding: 40px; margin-top: 100px; border-radius: 12px; background: #181a20; }
+        .value-box { font-size: 3.5rem; color: #f0b90b; font-weight: bold; margin: 20px 0; }
+        .label { color: #848e9c; letter-spacing: 1px; }
+        .status { color: #02c076; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="label">INTERNAL PURCHASING POWER (IPPR)</div>
+        <div id="ippr-value" class="value-box">$2,248,000.00</div>
+        <div class="label">Denominated in USD Equivalent ($REF)</div>
+        <hr style="border: 0.1px solid #333; margin: 20px 0;">
+        <div class="status">● ORACLE STATUS: SYNCED (10^7 QWF)</div>
+    </div>
+
+    <script>
+        function updateValuation() {
+            const basePrice = 0.2248;
+            const fluctuation = (Math.random() - 0.5) * 0.002;
+            const livePrice = basePrice + fluctuation;
+            const power = livePrice * 10000000;
+            document.getElementById('ippr-value').innerText = "$" + power.toLocaleString(undefined, {minimumFractionDigits: 2});
+        }
+        setInterval(updateValuation, 3000);
+    </script>
+</body>
+</html>

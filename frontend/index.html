@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PiRC Dashboard</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+
+<h2>PiRC Live Simulation</h2>
+
+<button onclick="runSybil()">Run Sybil Test</button>
+<pre id="output"></pre>
+
+<div id="chart"></div>
+
+<script>
+async function runSybil() {
+  const res = await fetch("http://127.0.0.1:1275/simulation/sybil");
+  const data = await res.json();
+
+  document.getElementById("output").innerText = data.result;
+
+  // dummy visualization
+  const x = ["Without Trust", "With Trust"];
+  const y = [40, 10];
+
+  Plotly.newPlot("chart", [{
+    x: x,
+    y: y,
+    type: "bar"
+  }]);
+}
+</script>
+
+</body>
+</html>
