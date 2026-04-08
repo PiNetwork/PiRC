@@ -1,0 +1,55 @@
+name: RWA Extension CI (Safe & Clean)
+
+on:
+  push:
+    paths:
+      - 'extensions/rwa-conceptual-auth-extension/**'
+  pull_request:
+
+jobs:
+  validate:
+    name: Validate RWA Spec & Demo
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout repo
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Setup Python
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      # === DEBUG STEP (remove after fixing) ===
+      - name: Debug - Show directory structure
+        run: |
+          echo "=== Repository root ==="
+          ls -la
+          echo "=== Extensions folder? ==="
+          ls -la extensions/ 2>/dev/null || echo "No extensions/ directory found"
+          echo "=== Looking for the schema file ==="
+          find . -name "rwa_auth_schema_v0.3.json" -type f || echo "Schema file NOT found anywhere"
+
+      # 3. Validate JSON Schema (fixed path + better error message)
+      - name: Validate JSON Schema
+        run: |
+          SCHEMA="extensions/rwa-conceptual-auth-extension/spec/rwa_auth_schema_v0.3.json"
+          if [ ! -f "$SCHEMA" ]; then
+            echo "❌ ERROR: Schema file not found at $SCHEMA"
+            echo "Current directory contents:"
+            ls -la
+            exit 1
+          fi
+          python -m json.tool "$SCHEMA" > /dev/null
+          echo "✅ JSON schema is valid"
+
+      # 4. Run RWA verification demo
+      - name: Run Verification Demo
+        run: |
+          python extensions/rwa-conceptual-auth-extension/examples/verification_demo_v0.3.py
+
+      # 5. Success message
+      - name: Success Message
+        run: echo "✅ RWA v0.3 pipeline passed successfully"

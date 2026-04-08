@@ -1,0 +1,12 @@
+# 1. Add all the new and updated files
+git add PiRC-101/
+
+# 2. Add the updated ROOT README (which should reference PiRC-101)
+git add README.md
+
+# 3. Create a clean, comprehensive commit addressing all feedback
+git commit -m "fix: standardized EVM reference model, deployed dynamic ABM simulator, and activated interactive visualizer"
+
+# 4. Push to update PR #45
+git push origin main
+

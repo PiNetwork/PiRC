@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PiRC-101 Justice Engine Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f0c29; color: white; text-align: center; }
+        .card { background: linear-gradient(145deg, #24243e, #302b63); border-radius: 20px; padding: 40px; margin: 50px auto; width: 60%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .price-up { color: #00ff88; font-size: 3em; font-weight: bold; }
+        .usd-power { color: #00d4ff; font-size: 4em; text-shadow: 0 0 20px rgba(0,212,255,0.5); }
+        .label { color: #bbb; text-transform: uppercase; letter-spacing: 2px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="label">Current Pi Market Price (Oracle)</div>
+        <div class="price-up" id="marketPrice">$0.2248</div>
+        <hr style="border: 0.5px solid #444; margin: 30px 0;">
+        <div class="label">Sovereign Purchasing Power (PiRC-101)</div>
+        <div class="usd-power" id="powerValue">$2,248,000.00 USD</div>
+        <p style="margin-top: 20px; color: #888;">Mathematically Secured by the Justice Engine Invariant</p>
+    </div>
+
+    <script>
+        // Real-time interactivity simulator
+        setInterval(() => {
+            let basePrice = 0.2248;
+            let fluctuation = (Math.random() - 0.5) * 0.001;
+            let newPrice = basePrice + fluctuation;
+            document.getElementById('marketPrice').innerText = "$" + newPrice.toFixed(4);
+            document.getElementById('powerValue').innerText = "$" + (newPrice * 10000000).toLocaleString() + ".00 USD";
+        }, 3000);
+    </script>
+</body>
+</html>
+
