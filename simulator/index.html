@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PiRC-101 Justice Engine Visualizer</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #1a1a2e; color: #fff; padding: 1rem; max-width: 600px; margin: auto; }
+        .card { background: #16213e; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); border: 1px solid #0f3460;}
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #a0aab2; font-size: 0.9rem;}
+        input { width: 100%; padding: 8px; border-radius: 4px; border: none; background: #2a3b5c; color: white; box-sizing: border-box;}
+        /* Hardened Slider Styling */
+        input[type=range] { -webkit-appearance: none; background: transparent; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; border-radius: 50%; background: #e94560; cursor: pointer; margin-top: -8px; }
+        input[type=range]::-webkit-slider-runnable-track { height: 4px; background: #2a3b5c; border-radius: 2px; }
+        
+        .stat { font-size: 1.5rem; color: #e94560; font-weight: bold; margin-top: 5px; }
+        .healthy { color: #4caf50; }
+        .critical { color: #f44336; }
+        hr { border: 0; border-top: 1px solid #0f3460; margin: 20px 0;}
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>⚖️ PiRC-101 State Machine Visualizer</h2>
+        <p style="font-size: 0.8rem; color: #a0aab2;">Based on Normative Whitepaper Specifications.</p>
+        <hr>
+        <div class="input-group">
+            <label>External Pi Price (USD) [ψ]</label>
+            <input type="number" id="piPrice" value="0.314" step="0.01" oninput="calculateState()">
+        </div>
+        
+        <div class="input-group">
+            <label>AMM Liquidity Depth (USD) [L]</label>
+            <input type="number" id="liquidity" value="10000000" step="100000" oninput="calculateState()">
+        </div>
+        
+        <div class="input-group">
+            <label>Total Circulating REF Supply [S]</label>
+            <input type="number" id="refSupply" value="1000000000" step="1000000" oninput="calculateState()">
+        </div>
+
+        <hr>
+        <h2>🛠️ Tweak Parameters (Beta)</h2>
+        <div class="input-group">
+            <label>Daily Exit Cap (0.1% to 1.0%)</label>
+            <input type="range" id="exitCapSlider" min="0.001" max="0.01" step="0.001" value="0.001" oninput="calculateState()">
+            <span id="exitCapDisplay">0.1%</span>
+        </div>
+
+        <div class="input-group">
+            <label>Gamma Solvency Threshold (1.0 to 2.0)</label>
+            <input type="range" id="gammaSlider" min="1.0" max="2.0" step="0.1" value="1.5" oninput="calculateState()">
+            <span id="gammaDisplay">1.5</span>
+        </div>
+
+        <hr>
+
+        <p>Throttling Coefficient (Φ): <div id="phiDisplay" class="stat healthy">1.0000</div></p>
+        <p>Minting Power (1 Pi = ? REF): <div id="mintPowerDisplay" class="stat">3,140,000 REF</div></p>
+        <p style="font-size: 0.8rem; color: #a0aab2;">The mathematical logic: $\Phi = ((\frac{L \times ExitCap}{S / 10M}) / Gamma)^2$</p>
+    </div>
+
+    <script>
+        const QWF = 10000000;
+
+        function calculateState() {
+            const price = parseFloat(document.getElementById('piPrice').value);
+            const liquidity = parseFloat(document.getElementById('liquidity').value);
+            const supply = parseFloat(document.getElementById('refSupply').value);
+            
+            // Hardened: Tweakable parameters ingesting from sliders
+            const dailyExitCap = parseFloat(document.getElementById('exitCapSlider').value);
+            const gamma = parseFloat(document.getElementById('gammaSlider').value);
+
+            // Update UI for Sliders
+            document.getElementById('exitCapDisplay').innerText = (dailyExitCap * 100).toFixed(1) + "%";
+            document.getElementById('gammaDisplay').innerText = gamma.toFixed(1);
+
+            let phi = 1.0;
+            if (supply > 0) {
+                // Hardened Ratio Calculation: Using variable parameters
+                const availableExit = liquidity * dailyExitCap;
+                const ratio = availableExit / (supply / QWF);
+                
+                if (ratio < gamma) {
+                    // Removed redundancy: simplified formula structure to reduce UI clutter
+                    phi = Math.pow(ratio / gamma, 2); 
+                }
+            }
+
+            const mintPower = price * QWF * phi;
+
+            // Update UI
+            const phiEl = document.getElementById('phiDisplay');
+            phiEl.innerText = phi.toFixed(4);
+            phiEl.className = 'stat ' + (phi > 0.8 ? 'healthy' : (phi > 0.3 ? 'warning' : 'critical'));
+
+            document.getElementById('mintPowerDisplay').innerText = 
+                new Intl.NumberFormat().format(mintPower.toFixed(0)) + " REF";
+        }
+
+        // Initialize view
+        calculateState();
+    </script>
+</body>
+</html>
