@@ -47,3 +47,23 @@ flowchart LR
 ```
 
 Next: [`3-Participation`](3-participation.md)
+
+---
+
+## 📍 PiRC1 Feedback – Section 2: Core Design
+
+The LaunchPad and my MapCap use case core designs are both similar in most respects, with the following key differences:
+
+> - **Re 1. Participation Window** – LaunchPad includes the excellent **Engagement Reward** feature.
+>
+> - **Re 2. Allocation Period: Liquidity Formation & Distribution** – MapCap includes a **“Whale Mitigation”** step between the end of the LaunchPad phase and the TGE event. At that stage:
+>   - Total stake by any single participant is capped at **10%** of the total of all stakes.
+>   - Excess staked Pi from large participants is **refunded immediately** after the LaunchPad price discovery period.
+>   - Token allocations correspond to the adjusted stake amounts.
+>
+> - **Re 4. Post-launch Period** – The PiRC1 paper describes:  
+>   *“Projects are required to have clear unlock schedules that are not more favorable than the community.”*  
+>   The MapCap use case is aligned with this approach. The first draft (still in review/amendment) is as follows:
+>   - All participants receive **token allocations proportional** to the Pi they’ve staked (after whale-cap adjustment).
+>   - Allocation reflects the calculated **Engagement Reward** as described in the PiRC1 paper.
+>   - Allocation is **vested over 10 months**, with **10% released at the end of each month** to prevent massive post-launch dumps immediately after LP opening for public trading.
