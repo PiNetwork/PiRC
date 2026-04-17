@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Online Exam Interface | Advanced Assessment System</title>
+    <style>
+        /* --- CSS Variables & Basic Resets --- */
+        :root {
+            --primary-color: #2c3e50; /* Formal navy blue */
+            --secondary-color: #3498db; /* Bright blue for active elements */
+            --accent-color: #27ae60; /* Green for success/saved */
+            --danger-color: #e74c3c; /* Red for alerts */
+            --marked-color: #f1c40f; /* Yellow for marked/flagged */
+            --text-main: #333;
+            --text-light: #fff;
+            --bg-body: #f4f7f6;
+            --bg-card: #fff;
+            --border-color: #ddd;
+            --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* --- Header (Exam Info & Timer) --- */
+        header {
+            background-color: var(--primary-color);
+            color: var(--text-light);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .exam-info h1 {
+            font-size: 1.2rem;
+            margin-bottom: 0.2rem;
+        }
+
+        .exam-info p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .timer-container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+        }
+
+        #timer {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--marked-color);
+        }
+
+        /* --- Main Container --- */
+        .main-container {
+            display: flex;
+            flex: 1;
+            padding: 2rem;
+            gap: 2rem;
+        }
+
+        @media (max-width: 992px) {
+            .main-container {
+                flex-direction: column;
+            }
+        }
+
+        /* --- Question Section --- */
+        .question-section {
+            flex: 3;
+            background-color: var(--bg-card);
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .question-header {
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 1rem;
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .question-number {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+        }
+
+        .question-marks {
+            background-color: #eee;
+            padding: 0.3rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+        }
+
+        .question-text {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .options-container {
+            display: grid;
+            gap: 1rem;
+        }
+
+        .option {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .option:hover {
+            background-color: #f9f9f9;
+            border-color: var(--secondary-color);
+        }
+
+        .option input[type="radio"] {
+            margin-right: 1rem;
+            width: 1.2rem;
+            height: 1.2rem;
+            cursor: pointer;
+        }
+
+        .option.selected {
+            background-color: #e3f2fd;
+            border-color: var(--secondary-color);
+            font-weight: bold;
+        }
+
+        .question-footer {
+            margin-top: auto;
+            padding-top: 2rem;
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        /* --- Navigation Buttons --- */
+        .btn {
+            padding: 0.7rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn:disabled {
+            background-color: #ccc !important;
+            cursor: not-allowed;
+        }
+
+        .btn-prev {
+            background-color: #7f8c8d;
+            color: var(--text-light);
+        }
+
+        .btn-next {
+            background-color: var(--secondary-color);
+            color: var(--text-light);
+        }
+
+        .btn-mark {
+            background-color: var(--marked-color);
+            color: #333;
+        }
+
+        .btn-save {
+            background-color: var(--accent-color);
+            color: var(--text-light);
+        }
+
+        .btn-submit {
+            background-color: var(--danger-color);
+            color: var(--text-light);
+            font-weight: bold;
+            margin-left: auto;
+        }
+
+        /* --- Side Panel --- */
+        .sidebar-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        @media (max-width: 992px) {
+            .sidebar-section {
+                order: -1; /* Appears above questions on mobile */
+            }
+        }
+
+        .sidebar-card {
+            background-color: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+        }
+
+        .sidebar-card h3 {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 0.5rem;
+        }
+
+        /* Question Palette */
+        .question-palette {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.5rem;
+        }
+
+        .palette-item {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            aspect-ratio: 1;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .palette-item:hover {
+            border-color: var(--secondary-color);
+            transform: translateY(-2px);
+        }
+
+        /* Question Palette Status States */
+        .palette-item.current {
+            border: 2px solid var(--secondary-color);
+            color: var(--secondary-color);
+        }
+
+        .palette-item.answered {
+            background-color: var(--accent-color);
+            color: var(--text-light);
+            border-color: var(--accent-color);
+        }
+
+        .palette-item.marked {
+            background-color: var(--marked-color);
+            color: #333;
+            border-color: var(--marked-color);
+        }
+
+        .palette-item.unanswered {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .progress-bar-bg {
+            flex: 1;
+            height: 10px;
+            background-color: #eee;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background-color: var(--accent-color);
+            width: 30%; /* Placeholder width */
+            transition: width 0.3s ease;
+        }
+
+        /* Footer */
+        footer {
+            background-color: var(--primary-color);
+            color: rgba(255, 255, 255, 0.6);
+            text-align: center;
+            padding: 1rem;
+            font-size: 0.8rem;
+            margin-top: auto;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="exam-info">
+            <h1>Final Exam: Fundamentals of Software Engineering</h1>
+            <p>Student: Michael A. Al-Fayed | Date: May 20, 2024</p>
+        </div>
+        <div class="timer-container">
+            <div>Time Remaining</div>
+            <div id="timer">59:59</div>
+        </div>
+    </header>
+
+    <main class="main-container">
+        
+        <section class="question-section">
+            <div class="question-header">
+                <span class="question-number" id="questionNumber">Question 1 of 10</span>
+                <span class="question-marks">2 Marks</span>
+            </div>
+
+            <div class="question-text">
+                Which of the following best describes the 'Waterfall Model' in the software development life cycle?
+            </div>
+
+            <div class="options-container">
+                <label class="option" onclick="selectOption(this)">
+                    <input type="radio" name="answer" value="a">
+                    A) A flexible model that allows for change at any stage.
+                </label>
+                <label class="option" onclick="selectOption(this)">
+                    <input type="radio" name="answer" value="b">
+                    B) A linear sequential model where each phase must be completed before the next begins.
+                </label>
+                <label class="option" onclick="selectOption(this)">
+                    <input type="radio" name="answer" value="c">
+                    C) A model based on rapid prototyping.
+                </label>
+                <label class="option" onclick="selectOption(this)">
+                    <input type="radio" name="answer" value="d">
+                    D) A model that combines the best features of other models.
+                </label>
+            </div>
+
+            <div class="question-footer">
+                <button class="btn btn-prev" disabled>
+                    ← Previous
+                </button>
+                <button class="btn btn-mark" onclick="markForReview(0)">
+                    ★ Mark for Review
+                </button>
+                <button class="btn btn-save" onclick="saveAnswer(0)">
+                    ✔ Save Answer
+                </button>
+                <button class="btn btn-next">
+                    Next →
+                </button>
+            </div>
+        </section>
+
+        <aside class="sidebar-section">
+            
+            <div class="sidebar-card">
+                <h3>Question Panel</h3>
+                <div class="question-palette">
+                    <div class="palette-item current" onclick="gotoQuestion(0)">1</div>
+                    <div class="palette-item marked" onclick="gotoQuestion(1)">2</div>
+                    <div class="palette-item answered" onclick="gotoQuestion(2)">3</div>
+                    <div class="palette-item unanswered" onclick="gotoQuestion(3)">4</div>
+                    <div class="palette-item unanswered" onclick="gotoQuestion(4)">5</div>
+                    <div class="palette-item answered" onclick="gotoQuestion(5)">6</div>
+                    <div class="palette-item unanswered" onclick="gotoQuestion(6)">7</div>
+                    <div class="palette-item unanswered" onclick="gotoQuestion(7)">8</div>
+                    <div class="palette-item unanswered" onclick="gotoQuestion(8)">9</div>
+                    <div class="palette-item unanswered" onclick="gotoQuestion(9)">10</div>
+                </div>
+            </div>
+
+            <div class="sidebar-card">
+                <h3>Completion Status</h3>
+                <div class="progress-container">
+                    <div class="progress-bar-bg">
+                        <div class="progress-bar-fill"></div>
+                    </div>
+                    <span class="progress-percent">30%</span>
+                </div>
+            </div>
+
+            <button class="btn btn-submit" onclick="confirmSubmit()">
+                ✔ Finish and Submit Exam
+            </button>
+        </aside>
+    </main>
+
+    <footer>
+        <p>All Rights Reserved © Unified Academic Assessment System 2024</p>
+        <p>Technical Support: help@exam-system.edu</p>
+    </footer>
+
+    <script>
+        // Simple mock of user actions
+        function selectOption(element) {
+            // Remove selection from other options
+            document.querySelectorAll('.option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            // Add selection to the current option
+            element.classList.add('selected');
+        }
+
+        // Save Answer
+        function saveAnswer(index) {
+            alert("Answer for question " + (index + 1) + " has been saved.");
+            // In a real application, update the palette-item status
+        }
+
+        // Mark for Review
+        function markForReview(index) {
+            alert("Question " + (index + 1) + " has been marked for review.");
+        }
+
+        // Go to question
+        function gotoQuestion(index) {
+            alert("Navigating to question " + (index + 1) + " (Simulation)");
+        }
+
+        // Confirm Submit
+        function confirmSubmit() {
+            if (confirm("Are you sure you want to submit the exam? You cannot return to change answers after this step.")) {
+                alert("Exam submitted successfully. Good luck!");
+            }
+        }
+
+        // Mock Timer (1 Hour)
+        let timeInSeconds = 3600;
+        const timerElement = document.getElementById('timer');
+
+        function updateTimer() {
+            const minutes = Math.floor(timeInSeconds / 60);
+            const seconds = timeInSeconds % 60;
+            
+            timerElement.textContent = 
+                `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            if (timeInSeconds <= 0) {
+                clearInterval(timerInterval);
+                timerElement.style.color = 'red';
+                timerElement.textContent = "00:00";
+                alert("Exam time has ended! Your answers will be submitted automatically.");
+            } else {
+                timeInSeconds--;
+            }
+        }
+
+        const timerInterval = setInterval(updateTimer, 1000);
+        updateTimer(); // Initial update
+    </script>
+</body>
+</html>
+
