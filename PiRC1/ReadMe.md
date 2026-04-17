@@ -19,3 +19,7 @@ Pi will review and consider community input from GitHub and high-level feedback 
 - **Design 2**
   - [`4-allocation design 2`](<4-allocation/4-allocation design 2.md>)
   - [`5-tge-state design 2`](<5-tge-state/5-tge-state design 2.md>)
+
+---
+### 💡 Community Technical Contributions
+* **Standardizing Engagement:** Proposals for **Programmable Engagement Proofs (PEP)** and **Weighted Engagement Frameworks (WEF)** have been drafted in Sections 2 and 3 to support developers in building secure, bot-resistant ecosystem applications.

@@ -46,4 +46,14 @@ flowchart LR
   Pioneers -->|"Commit Pi (pay)"| Escrow
 ```
 
+### 2.3 Proposed Extension: Programmable Engagement Proofs (PEP)
+To standardize the **Engagement** measurement described in Section 2.1, I propose adding a technical layer for **Programmable Engagement Proofs**. 
+
+As a Full-Stack developer building ecosystem solutions (e.g., Map-of-Pi), I suggest that the "Participation Window" should include a standardized API or SDK hook that allows projects to submit **Signed Activity Proofs**. This addresses several critical needs:
+
+* **Standardized Reporting:** dApps can report milestones (onboarding, feature use) in a unified format that the Launchpad can verify.
+* **Sybil Protection:** By requiring cryptographic signatures from the App’s backend for each engagement milestone, we prevent automated bot manipulation of the engagement-ranked order.
+* **Developer Experience:** A clear interface for MERN/Full-stack developers to "hook" their app logic into the PiPower calculation, ensuring that real utility translates directly to fair token allocation.
+
+
 Next: [`3-Participation`](3-participation.md)

@@ -55,4 +55,17 @@ In the base case with no rewards ($T_{engage}=0$), this gives $p_{floor}=0.25\,p
 
 **Intuitively:** even to the extent of “everyone swaps every token of theirs back to the pool”, the pool cannot be drained because the Escrow Wallet that added the liqludiity initially is locked and cannot withdraw from the pool; the pool still retains nearly half of the entire initial participant commitment ($0.488C$ Pi) and all of the tokens in circulation ($2.05T$ tokens), which mathematically prevents the price to drop further than 23.8% of $p_{list}$ in this construct.
 
+
+### 5.1 Proposed Developer Utility: Transparency API & Real-time Floor Monitoring
+To build trust within the ecosystem, it is crucial that Pioneers can verify the "Liquidity Lock" and the "Price Floor" directly within project apps.
+
+**Developer Proposal:**
+I propose that the Pi SDK provides a standardized method (e.g., `getPoolStabilityMetrics()`) that allows dApps (like Map-of-Pi) to fetch and display:
+1. **Escrow Lock Status:** A verifiable on-chain proof that the Escrow Wallet's signing authority is revoked.
+2. **Dynamic p_floor Calculation:** Real-time calculation of the theoretical lower bound based on current circulating supply.
+
+**Impact:**
+Integrating these metrics into the MERN stack frontend will enhance user confidence and distinguish Pi Network projects from traditional, high-risk Web3 launches.
+
+
 Next: [`Design 2`](<../4-allocation/4-allocation design 2.md>)

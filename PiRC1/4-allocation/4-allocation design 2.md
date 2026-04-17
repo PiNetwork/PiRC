@@ -136,4 +136,15 @@ xychart-beta
 
 ```
 
+### 4.2 Proposed Technical Extension: Dynamic Unlock Oracle (DUO)
+The current design (Section 4.1) links lockup periods to the size of the discount. To further incentivize the ecosystem, I propose a **Dynamic Unlock Oracle**.
+
+**The Concept:**
+Instead of a static time-based lockup, developers can implement a "Activity-Based Release" mechanism. For every verified milestone a user achieves in the dApp (e.g., in Map-of-Pi), a portion of their locked discounted tokens is released earlier.
+
+**Technical Benefit for MERN Developers:**
+* **Retention Logic:** This gives developers a powerful tool to keep users engaged post-TGE.
+* **Smart Contract Integration:** Using signed messages from the App's backend to trigger partial token releases from the Escrow-governed lockup.
+
+
 Next: [`5-tge-state`](../5-tge-state/5-tge-state%20design%202.md)

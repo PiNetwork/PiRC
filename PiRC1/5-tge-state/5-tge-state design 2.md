@@ -51,3 +51,15 @@ $$
 Intuitively: even to the extent of “everyone sells everything”, the pool cannot be drained because the Escrow Wallet that added the liqludiity initially is locked and cannot withdraw from the pool; the pool still retains $0.4C$ Pi and $T$ tokens, which prevents the price to drop further in this construct.
 **Intuitively:** even to the extent of “everyone swaps every token of theirs back to the pool”, the pool cannot be drained because the Escrow Wallet that added the liqludiity initially is locked and cannot withdraw from the pool; the pool still retains nearly half of the entire initial participant commitment ($0.4C$ Pi) and all of the tokens in circulation ($T$ tokens), which mathematically prevents the price to drop further than 16% of $p_{list}$ in this construct.
 
+
+
+### 5.1 Proposed Extension: Post-TGE Liquidity Analytics Interface
+Design 2 relies heavily on automated swaps and constant-product invariants. To maintain the highest level of community trust, developers should be able to integrate real-time liquidity health metrics.
+
+**Developer Proposal:**
+I propose the inclusion of a **Standardized Liquidity Event Log** within the Pi Block Explorer or via an SDK hook. This allows MERN-stack developers to:
+1. **Verify the "signing authority 0" status:** Proving that the Escrow Wallet is permanently locked.
+2. **Track the $x \cdot y = k$ invariant:** Monitoring the pool's health to ensure that the $p_{floor}$ remains mathematically intact.
+
+**Value Addition:**
+By providing these hooks, Pi Network empowers developers to create "Transparency Dashboards" within their apps (like Map-of-Pi), providing Pioneers with real-time confidence in the ecosystem's mathematical floor.

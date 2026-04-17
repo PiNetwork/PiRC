@@ -151,4 +151,16 @@ xychart-beta
 - Starting LP spot price is $p_{list} = \frac{C}{T}$
 - Highly engaged participants pay $0.909p_{list}$. Medimum engaged participants pay $0.952p_{list}$. Least engaged participants pay $p_{list}$
 
+
+### 4.2 Proposed Technical Improvement: Dynamic Tier Transition (DTT)
+The current tier model uses a "Step Function" for discounts (10%, 5%, 0%). While effective, it can create friction at the boundaries of each 1/3 percentile.
+
+**Developer Proposal:**
+To ensure a better User Experience (UX) and prevent "Tier-farming" at the edges, I propose implementing a **Sigmoid-based Smoothing Algorithm** for the $t_i^{discount}$ calculation.
+
+**Benefits for dApp Developers:**
+* **Granular Rewards:** Instead of broad tiers, developers can offer micro-incentives for every incremental increase in the Engagement Score.
+* **API Standardization:** Providing a standard `getEffectivePrice(engagementScore)` function within the Pi SDK to help developers display real-time price benefits to users within their MERN apps.
+
+
 Next: [`5-tge-state`](<../5-tge-state/5-tge-state design 1.md>)

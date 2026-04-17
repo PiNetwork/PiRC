@@ -19,4 +19,17 @@ $$
 - At window close, participants are ranked highest-to-lowest based on the Engagement Score; this rank may have an effect on the effective price of the token in the Allocation Period.
 
 
+### 3.3 Proposed Refinement: Weighted Engagement Framework (WEF)
+To ensure the **Engagement Score** mentioned in Section 3.2 reflects true utility, I propose a **Weighted Engagement Framework**. 
+
+As a Full-Stack developer, I suggest that the Engagement Score should be a composite of:
+1. **Proof of Activity (PoA):** Basic interactions (Logins, navigation).
+2. **Proof of Utility (PoU):** High-value actions (e.g., contributing data, completing transactions, or reaching app-specific milestones).
+3. **Consistency Factor:** Rewarding users who engage throughout the entire window, rather than burst activity at the end.
+
+**Technical Implementation:**
+Projects should provide a `Manifest` of weighted actions to the Launchpad. This prevents "Engagement Farming" and ensures that the "Engagement-ranked order" truly rewards the most valuable users of the ecosystem.
+
+
+
 Next: **4-Allocation [`Design 1`](<4-allocation/4-allocation design 1.md>) [`Design 2`](<4-allocation/4-allocation design 2.md>)**
