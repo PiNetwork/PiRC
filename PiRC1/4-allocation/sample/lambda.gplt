@@ -1,0 +1,7 @@
+set xrange [0.001:1]
+set title "Total Allocation by Fairness λ"
+set xlabel "λ"
+set ylabel "Allocated π"
+set output "alloc_lambda.png"
+set terminal png
+plot "lambda.dat" using 1:2 with lines lc "blue" notitle

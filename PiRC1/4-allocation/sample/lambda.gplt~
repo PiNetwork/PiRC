@@ -1,0 +1,3 @@
+set xrange [0.001:1]
+set title "Total Allocation by Lambda"
+plot "lambda.dat" using 1:2 with lines style blue title none
