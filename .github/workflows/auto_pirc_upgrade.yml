@@ -1,0 +1,29 @@
+name: PiRC Auto-Upgrade & Build
+permissions:
+  contents: write
+on:
+  push:
+    branches: [ main, pirc_final_update.py ]
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Run PiRC Master Upgrade Script
+        run: python pirc_final_update.py
+
+      - name: Commit Generated 7-Layer Structure
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "PiRC-Bot"
+          git add .
+          git commit -m "💎 [AUTO] Integrated 7-Layer Colored Token System & Mathematical Parity" || echo "No changes to commit"
+          git push

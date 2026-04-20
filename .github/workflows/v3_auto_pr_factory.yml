@@ -1,0 +1,40 @@
+name: 🏭 V3 Enterprise Auto-PR Factory
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - '**.md'      
+  workflow_dispatch:
+
+jobs:
+  run-pr-factory:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout PiRC
+        uses: actions/checkout@v4
+        with:
+          path: PiRC
+
+      - name: 📥 Checkout SmartContracts
+        uses: actions/checkout@v4
+        with:
+          repository: Ze0ro99/SmartContracts
+          path: SmartContracts
+          token: ${{ secrets.OMNI_SYNC_TOKEN }}
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: ⚙️ Execute PR Factory & Hardware Scaffolder
+        env:
+          # This token provides the GitHub CLI (gh) the permissions to open PRs 
+          GH_TOKEN: ${{ secrets.OMNI_SYNC_TOKEN }}
+        run: |
+          cd SmartContracts
+          git config user.name "Omni-Synchronizer Bot"
+          git config user.email "omni-bot@ze0ro99.pirc"
+          cd ../PiRC
+          python scripts/automation/enterprise_pr_factory.py

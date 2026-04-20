@@ -1,0 +1,20 @@
+[
+  {
+    "sku": "πRC-RWA-001",
+    "name": "Philosophical Solar Clock (Wood/Iron)",
+    "category": "RWA_Home_Accessory",
+    "contract": "rwa_garden",
+    "price_pichash": 314.15,
+    "source_verification": "Jordan_Workshop_Verified",
+    "aml_status": "Compliant"
+  },
+  {
+    "sku": "πRC-RWA-002",
+    "name": "7-Layer Sovereign Shelf",
+    "category": "RWA_Furniture",
+    "contract": "rwa_garden",
+    "price_pichash": 700.00,
+    "source_verification": "University_Project_Sync",
+    "aml_status": "Compliant"
+  }
+]
