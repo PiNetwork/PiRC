@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vanguard Bridge | Technical Telemetry & Equity Explorer</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+
+    <script src="assets/js/token_layers.js"></script>
+
+    <style>
+        :root { 
+            --pi-gold: #ffa500; 
+            --bg: #0d1117; 
+            --card: #161b22; 
+            --border: #30363d; 
+            --text: #c9d1d9;
+            --text-muted: #8b949e;
+            --vanguard-blue: #58a6ff;
+            --stable: #3fb950; 
+            --danger: #f85149; 
+        }
+
+        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; }
+
+        .navbar { background: var(--card); padding: 12px 25px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+
+        .logo { color: var(--pi-gold); font-weight: bold; display: flex; align-items: center; gap: 12px; }
+
+        .controls { display: flex; align-items: center; gap: 10px; }
+
+        .wallet-btn {
+            background: #238636;
+            border: none;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .wallet-status {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+        }
+
+        .status {
+            font-weight: bold;
+        }
+
+        .status.ok {
+            color: var(--stable);
+        }
+
+        .status.error {
+            color: var(--danger);
+        }
+    </style>
+</head>
+
+<body>
+
+<nav class="navbar">
+    <div class="logo">
+        <i class="fas fa-bridge-circle-check"></i>
+        <span>VANGUARD BRIDGE</span>
+    </div>
+
+    <div class="controls">
+        <button onclick="changeLanguage('en')">EN</button>
+        <button onclick="changeLanguage('id')">ID</button>
+
+        <!-- WALLET -->
+        <button id="connect-btn" class="wallet-btn">🔗 Connect</button>
+        <span id="wallet-status" class="wallet-status">Not connected</span>
+    </div>
+</nav>
+
+<div class="container">
+
+    <h3>🌈 7-Layer Token System</h3>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Layer</th>
+                <th>Balance</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+
+        <tbody>
+
+            <tr data-layer="L0">
+                <td>L0</td>
+                <td class="balance">—</td>
+                <td class="status">—</td>
+            </tr>
+
+            <tr data-layer="L1">
+                <td>L1</td>
+                <td class="balance">—</td>
+                <td class="status">—</td>
+            </tr>
+
+            <tr data-layer="L2">
+                <td>L2</td>
+                <td class="balance">—</td>
+                <td class="status">—</td>
+            </tr>
+
+            <tr data-layer="L3">
+                <td>L3</td>
+                <td class="balance">—</td>
+                <td class="status">—</td>
+            </tr>
+
+            <tr data-layer="L4">
+                <td>L4</td>
+                <td class="balance">—</td>
+                <td class="status">—</td>
+            </tr>
+
+            <tr data-layer="L5">
+                <td>L5</td>
+                <td class="balance">—</td>
+                <td class="status">—</td>
+            </tr>
+
+            <tr data-layer="L6">
+                <td>L6</td>
+                <td class="balance">—</td>
+                <td class="status">—</td>
+            </tr>
+
+        </tbody>
+    </table>
+
+</div>
+
+<!-- CORE APP -->
+<script type="module" src="assets/js/explorer-core.js"></script>
+
+<!-- WALLET UI -->
+<script type="module">
+import { wallet } from "./assets/js/wallet.js";
+import { loadAllBalances } from "./assets/js/explorer-core.js";
+
+async function initWalletUI() {
+  const statusEl = document.getElementById("wallet-status");
+
+  statusEl.innerText = "Checking wallet...";
+
+  const auto = await wallet.autoConnect();
+
+  if (auto.auto) {
+    statusEl.innerText = `Connected: ${auto.address.slice(0,6)}...`;
+    checkNetwork(statusEl);
+    await loadAllBalances(); // 🔥 langsung load balance
+  } else {
+    statusEl.innerText = "Not connected";
+  }
+}
+
+document.getElementById("connect-btn")
+?.addEventListener("click", async () => {
+
+  const statusEl = document.getElementById("wallet-status");
+  statusEl.innerText = "Connecting...";
+
+  const res = await wallet.connect();
+
+  if (!res.success) {
+    handleError(res.error, statusEl);
+    return;
+  }
+
+  statusEl.innerText = `Connected: ${res.address.slice(0,6)}...`;
+  checkNetwork(statusEl);
+
+  await loadAllBalances(); // 🔥 trigger fetch balance
+});
+
+function checkNetwork(el) {
+  if (!wallet.isTestnet()) {
+    el.innerText += " ⚠️ Testnet only";
+  } else {
+    el.innerText += " ✅";
+  }
+}
+
+function handleError(err, el) {
+  if (err === "FREIGHTER_NOT_INSTALLED") {
+    el.innerHTML = `
+      Install Freighter →
+      <a href="https://www.freighter.app/" target="_blank">Download</a>
+    `;
+    return;
+  }
+
+  el.innerText = "Error: " + err;
+}
+
+initWalletUI();
+</script>
+
+<script src="assets/js/314_system.js"></script>
+<script src="assets/js/governance_voting.js"></script>
+
+</body>
+</html>

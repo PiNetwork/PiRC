@@ -1,0 +1,39 @@
+name: 🔄 V4 Eternal Context-Aware Sync
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - '**.md'      
+  workflow_dispatch:
+
+jobs:
+  sync_and_push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Checkout PiRC
+        uses: actions/checkout@v4
+        with:
+          path: PiRC
+
+      - name: 📥 Checkout SmartContracts
+        uses: actions/checkout@v4
+        with:
+          repository: Ze0ro99/SmartContracts
+          path: SmartContracts
+          token: ${{ secrets.OMNI_SYNC_TOKEN }}
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: ⚙️ Execute Context-Aware PR Factory
+        env:
+          GH_TOKEN: ${{ secrets.OMNI_SYNC_TOKEN }}
+        run: |
+          cd SmartContracts
+          git config user.name "Omni-Synchronizer V4"
+          git config user.email "v4-bot@ze0ro99.pirc"
+          cd ../PiRC
+          python scripts/automation/v4_context_aware_factory.py

@@ -1,0 +1,14 @@
+/ (Repository Root)
+├── .github/workflows/
+│   └── rust.yml          <-- (Finalized build script with optimized Soroban caching)
+├── assets/
+│   ├── css/
+│   │   └── nexus-design.css <-- (The final professional technical aesthetic, charcoal & neon blue)
+│   ├── js/
+│   │   ├── calculations.js   <-- (MODIFIED: The weight conversion engine with auditable $WCF math)
+│   │   ├── constants.js      <-- (The "source of truth" locking in fairness constants & token weights)
+│   │   └── explorer-core.js  <-- (MODIFIED: The main telemetry controller, managing DOM and data loops)
+├── index.html            <-- (MODIFIED: The master interface, fully labeled with auditable CEX/WCF columns)
+├── README.md             <-- (The technical manifesto, grounding the project in mathematical reality)
+└── netlify.toml          <-- (Finalized function proxies for zero-cost secure data feeds)
+
