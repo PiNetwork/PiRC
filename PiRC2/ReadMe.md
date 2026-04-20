@@ -15,3 +15,4 @@ Community feedback is welcome. Pioneers are encouraged to review, comment, and s
   - [`7-query-methods`](7-query-methods.md)
   - [`8-admin-methods`](8-admin-methods.md)
   - [`9-subscription-setup-guide`](9-subscription-setup-guide.md)
+  - [`10-security-considerations`](10-security-considerations.md) — *community contribution*
