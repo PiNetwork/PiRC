@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "203.1",
+  "type": "merchant_oracle",
+  "properties": {
+    "pair": {
+      "type": "string",
+      "default": "PI/USD"
+    },
+    "kraken": {
+      "type": "number",
+      "minimum": 0
+    },
+    "kucoin": {
+      "type": "number",
+      "minimum": 0
+    },
+    "binance": {
+      "type": "number",
+      "minimum": 0
+    },
+    "phi": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 0.99,
+      "default": 0.05
+    }
+  },
+  "required": ["kraken", "kucoin", "binance"]
+}
