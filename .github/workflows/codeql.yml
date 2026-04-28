@@ -1,0 +1,64 @@
+name: "CodeQL Advanced Security Scan"
+
+on:
+  push:
+    branches: [ "main", "v2.1", "v2.0" ]
+  pull_request:
+    branches: [ "main", "v2.1", "v2.0" ]
+  schedule:
+    - cron: '0 0 * * 0'   # Weekly
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+      packages: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'javascript', 'python', 'rust', 'actions' ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended,security-and-quality
+          build-mode: ${{ matrix.language == 'javascript' && 'none' || 'auto' }}
+          config: |
+            paths-ignore:
+              - 'node_modules/**'
+              - 'dist/**'
+              - 'build/**'
+              - '.next/**'
+              - 'frontend/node_modules/**'
+              - 'public/**'
+              - 'PiRC-*/**'
+              - 'automation/**'
+              - 'deploy/**'
+              - 'enhanced/**'
+              - 'pirc2_integration/**'
+              - 'run/**'
+              - '**/*.min.js'
+              - '**/*.bundle.js'
+              - '**/*.d.ts'
+
+      - name: Autobuild (Rust & Python only)
+        if: matrix.language != 'javascript' && matrix.language != 'actions'
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+          upload: true

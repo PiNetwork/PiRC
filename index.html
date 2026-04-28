@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PiRC Sovereign Matrix · Live PiDEX, Markets & Developer Portal</title>
+
+    <!-- Official SDKs -->
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-sdk/12.1.0/stellar-sdk.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+
+        body {
+            background-color: #020617;
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            background-image:
+                radial-gradient(circle at 15% 50%, rgba(147, 51, 234, 0.10) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(251, 191, 36, 0.06) 0%, transparent 50%);
+        }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            border-radius: 1rem;
+        }
+
+        .code-box {
+            background: #000000;
+            border: 1px solid #1e293b;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            overflow-y: auto;
+            box-shadow: inset 0 0 15px rgba(0,0,0,1);
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .tab-active { border-bottom: 2px solid #fbbf24; color: #fbbf24; }
+        .tab-inactive { color: #64748b; }
+        .tab-inactive:hover { color: #cbd5e1; }
+
+        /* Spherical hybrid token tile */
+        .sphere-token {
+            position: relative;
+            border-radius: 9999px;
+            box-shadow:
+                inset -8px -8px 18px rgba(0,0,0,0.55),
+                inset 8px 8px 16px rgba(255,255,255,0.08),
+                0 0 14px rgba(255,255,255,0.05);
+        }
+        .pulse-dot::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 9999px;
+            box-shadow: 0 0 0 0 rgba(74,222,128,0.5);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%   { box-shadow: 0 0 0 0 rgba(74,222,128,0.45); }
+            70%  { box-shadow: 0 0 0 12px rgba(74,222,128,0); }
+            100% { box-shadow: 0 0 0 0 rgba(74,222,128,0); }
+        }
+        .row-up   { color: #4ade80; }
+        .row-down { color: #f87171; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4 md:p-8">
+
+    <div class="max-w-7xl w-full glass-panel p-6 md:p-8 shadow-2xl shadow-purple-900/20">
+
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row items-center justify-between mb-8 gap-4 border-b border-slate-800 pb-6">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-slate-900 font-extrabold text-3xl shadow-lg shadow-yellow-500/20">π</div>
+                <div>
+                    <h1 class="text-3xl font-bold text-white tracking-tight">PiRC <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">Sovereign Matrix</span></h1>
+                    <p class="text-sm text-slate-400 font-mono mt-1">Live PiDEX · Soroban Pi Testnet · Spherical Hybrid Tokens</p>
+                </div>
+            </div>
+            <div class="flex flex-col items-end gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="flex flex-col text-right">
+                        <span id="usernameDisplay" class="text-sm font-bold text-yellow-400 leading-tight">Guest</span>
+                        <span id="statusDisplay" class="text-[10px] text-slate-400 uppercase tracking-wider">Connecting...</span>
+                    </div>
+                    <div id="userAvatar" class="w-9 h-9 rounded-full bg-blue-500 flex items-center justify-center text-slate-900 font-extrabold text-sm">?</div>
+                    <button id="payBtn" class="ml-2 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-lg shadow-blue-500/30 transition-all transform hover:-translate-y-0.5">
+                        Support 1 Pi
+                    </button>
+                </div>
+                <div class="flex items-center gap-3 text-xs font-mono">
+                    <div class="px-3 py-1 rounded-full bg-green-900/30 border border-green-500/50 text-green-400 flex items-center gap-2">
+                        <div class="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></div>
+                        <span id="rpcStatus">RPC Connected</span>
+                    </div>
+                    <div class="text-slate-500">
+                        Ledger: <span id="ledgerSequence" class="text-slate-300">Syncing…</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live ticker strip (markets) -->
+        <div id="tickerStrip" class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6 font-mono text-xs">
+            <div class="glass-panel p-3"><div class="text-slate-500">PI · Aggregated</div><div id="tkAgg"  class="text-white text-lg">—</div><div class="text-slate-500" id="tkAggSrc">sources: —</div></div>
+            <div class="glass-panel p-3"><div class="text-slate-500">OKX PI/USDT</div>     <div id="tkOkx"  class="text-white text-lg">—</div><div id="tkOkxChg" class="text-slate-500">24h: —</div></div>
+            <div class="glass-panel p-3"><div class="text-slate-500">MEXC PI/USDT</div>    <div id="tkMexc" class="text-white text-lg">—</div><div id="tkMexcChg" class="text-slate-500">24h: —</div></div>
+            <div class="glass-panel p-3"><div class="text-slate-500">Best Bid / Ask</div>  <div id="tkBook" class="text-white text-lg">—</div><div id="tkSpread" class="text-slate-500">spread: —</div></div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex gap-6 border-b border-slate-800 mb-6 font-mono text-sm overflow-x-auto whitespace-nowrap">
+            <button onclick="switchTab('explorer')"   id="tab-explorer"   class="pb-3 px-2 tab-active   transition-colors">🔍 Live Raw Transactions</button>
+            <button onclick="switchTab('markets')"    id="tab-markets"    class="pb-3 px-2 tab-inactive transition-colors">📈 Markets · OKX / MEXC</button>
+            <button onclick="switchTab('layers')"     id="tab-layers"     class="pb-3 px-2 tab-inactive transition-colors">🌈 7 Matrix Layers</button>
+            <button onclick="switchTab('lifecycle')"  id="tab-lifecycle"  class="pb-3 px-2 tab-inactive transition-colors">🧬 Transaction Lifecycle</button>
+            <button onclick="switchTab('playground')" id="tab-playground" class="pb-3 px-2 tab-inactive transition-colors">🚀 Developer Sandbox</button>
+        </div>
+
+        <!-- Orchestrator Live Status Panel -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 font-mono text-xs">
+            <div class="glass-panel p-4">
+                <div class="text-slate-500 mb-1">Master Issuer · Sequence</div>
+                <div id="statusIssuerSeq" class="text-white text-lg">—</div>
+                <div class="text-slate-500 mt-2 break-all" id="statusIssuerId">GA3ECRFJ6SO5BW6NEIKW3ACJXNG5UNBTLRRXWC742NHUEDV6KL3RNEN6</div>
+            </div>
+            <div class="glass-panel p-4">
+                <div class="text-slate-500 mb-1">PiRC2 Subscription Contract</div>
+                <div id="statusSubNet" class="text-white text-lg">—</div>
+                <div class="text-slate-500 mt-2 break-all">CCUF75B6W3HRJTJD6O7OXNI72HGJ7DERZ5MUNOMFMSK23ME5GUIKPFYV</div>
+            </div>
+            <div class="glass-panel p-4">
+                <div class="text-slate-500 mb-1">Soroban Latest Ledger</div>
+                <div id="statusLedger" class="text-white text-lg">—</div>
+                <div class="text-slate-500 mt-2" id="statusEnv">Env: …</div>
+            </div>
+        </div>
+
+        <!-- TAB 1: Live Transactions (Explorer) -->
+        <div id="content-explorer" class="flex flex-col h-[520px]">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-white">Live Blockchain Activity (Master Issuer)</h2>
+                <div class="flex gap-2">
+                    <button onclick="fetchLiveTransactions()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded text-xs text-white border border-slate-600">Refresh Stream</button>
+                </div>
+            </div>
+            <div class="code-box flex-grow text-sm" id="txTerminal">
+                <div class="text-slate-500 font-mono">Fetching on-chain data from Pi Testnet Horizon…</div>
+            </div>
+        </div>
+
+        <!-- TAB 2: Markets (OKX + MEXC) -->
+        <div id="content-markets" class="hidden flex-col gap-4">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="glass-panel p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-white font-semibold">Order Book · Depth Aggregate</h3>
+                        <div class="text-xs font-mono text-slate-500" id="bookFreshness">—</div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3 font-mono text-xs">
+                        <div>
+                            <div class="text-green-400 mb-1">Bids (buy)</div>
+                            <div class="code-box h-56" id="bidsBox"></div>
+                        </div>
+                        <div>
+                            <div class="text-red-400 mb-1">Asks (sell)</div>
+                            <div class="code-box h-56" id="asksBox"></div>
+                        </div>
+                    </div>
+                    <div class="mt-3 grid grid-cols-3 gap-2 text-xs font-mono text-slate-300">
+                        <div class="glass-panel p-2"><div class="text-slate-500">Spread</div><div id="bookSpread" class="text-white">—</div></div>
+                        <div class="glass-panel p-2"><div class="text-slate-500">Buy Pressure</div><div id="bookBuyP" class="text-white">—</div></div>
+                        <div class="glass-panel p-2"><div class="text-slate-500">Total Depth</div><div id="bookDepth" class="text-white">—</div></div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-white font-semibold">Recent Trades (cross-exchange)</h3>
+                        <div class="text-xs font-mono text-slate-500" id="tradesFreshness">—</div>
+                    </div>
+                    <div class="code-box h-72 text-xs font-mono" id="tradesBox"></div>
+                </div>
+            </div>
+
+            <div class="glass-panel p-5">
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="text-white font-semibold">PI / USDT · 1m candles (MEXC)</h3>
+                    <div class="text-xs font-mono text-slate-500" id="klineRange">—</div>
+                </div>
+                <div class="overflow-x-auto"><div id="klineSparkline" class="min-w-[640px]"></div></div>
+            </div>
+        </div>
+
+        <!-- TAB 3: The 7 Layers & Spherical Hybrid Tokens -->
+        <div id="content-layers" class="hidden flex-col">
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold text-white mb-2">The 7 Sovereign Layers · Spherical Hybrid Tokens</h2>
+                <p class="text-sm text-slate-400">All seven colored Project Packets are issued by the Master Issuer on Pi Testnet (Soroban). Each layer contract is wrapped as a spherical hybrid token — clickable to verify on-chain.</p>
+                <p class="text-xs text-slate-500 mt-1">Color rule: a layer's contract is colored to match its layer; cross-cutting subscription / governance contracts are <span class="text-pink-300">pink</span> (3–4 layers) or <span class="text-purple-300">purple</span> (all layers).</p>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="layersGrid"></div>
+        </div>
+
+        <!-- TAB 4: Transaction Lifecycle / System Log -->
+        <div id="content-lifecycle" class="hidden flex-col">
+            <div class="mb-4 flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-semibold text-white">Transaction Lifecycle & System Log</h2>
+                    <p class="text-sm text-slate-400">Unified event stream across Pi Testnet, Soroban RPC, OKX & MEXC — every feature pipes its events here so the trade lifecycle is auditable end-to-end.</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="exportLog()"  class="px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded text-xs text-white border border-slate-600">Export JSON</button>
+                    <button onclick="clearLog()"   class="px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded text-xs text-white border border-slate-600">Clear</button>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3 font-mono text-xs">
+                <button data-filter="all"    onclick="setLogFilter('all')"    class="logFilter px-2 py-1 rounded border border-slate-700 text-slate-300">all</button>
+                <button data-filter="chain"  onclick="setLogFilter('chain')"  class="logFilter px-2 py-1 rounded border border-slate-700 text-slate-300">chain</button>
+                <button data-filter="market" onclick="setLogFilter('market')" class="logFilter px-2 py-1 rounded border border-slate-700 text-slate-300">market</button>
+                <button data-filter="rpc"    onclick="setLogFilter('rpc')"    class="logFilter px-2 py-1 rounded border border-slate-700 text-slate-300">rpc</button>
+                <button data-filter="user"   onclick="setLogFilter('user')"   class="logFilter px-2 py-1 rounded border border-slate-700 text-slate-300">user</button>
+            </div>
+            <div class="code-box h-[500px] text-xs font-mono" id="logBox"></div>
+        </div>
+
+        <!-- TAB 5: Smart Contract Playground -->
+        <div id="content-playground" class="hidden grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="bg-slate-900/50 p-6 rounded-xl border border-slate-700">
+                <h2 class="text-lg font-semibold text-white mb-4">Interact with Smart Contracts</h2>
+                <p class="text-xs text-slate-400 mb-4">Simulate real XDR contract calls on Pi Testnet via Soroban RPC. No keys required for read-only simulation.</p>
+
+                <div class="mb-4">
+                    <label class="block text-xs text-slate-400 font-mono mb-1">Target Contract</label>
+                    <select id="targetContract" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-xs font-mono text-purple-300"></select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-xs text-slate-400 font-mono mb-1">Select Function</label>
+                    <select id="funcSelect" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-sm font-mono text-white">
+                        <option value="check_phi_solvency">check_phi_solvency (Read-Only)</option>
+                        <option value="mint_ref_capacity">mint_ref_capacity (Requires Auth)</option>
+                    </select>
+                </div>
+
+                <button id="simulateBtn" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-mono font-bold rounded transition-colors mt-4">
+                    Simulate Transaction via RPC
+                </button>
+                <p class="text-[10px] text-slate-500 mt-3 font-mono">Authenticated mint operations require a wallet & must be signed off-chain. This sandbox runs the call against Soroban's <code>simulateTransaction</code> endpoint to surface the raw XDR result and resource usage.</p>
+            </div>
+
+            <div class="flex flex-col">
+                <h2 class="text-lg font-semibold text-white mb-4">RPC Response (Raw JSON)</h2>
+                <div class="code-box flex-grow text-xs font-mono text-green-400" id="rpcOutput">
+                    <div class="text-slate-500">// Waiting for developer input…</div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="text-[10px] font-mono text-slate-600 mt-8 pt-4 border-t border-slate-800 flex flex-wrap gap-x-6 gap-y-1 justify-between">
+            <span>Horizon: api.testnet.minepi.com</span>
+            <span>Soroban RPC: soroban-testnet.stellar.org</span>
+            <span>Markets: OKX · MEXC</span>
+            <span>Block explorer: blockexplorer.minepi.com / stellar.expert</span>
+        </footer>
+    </div>
+
+    <script>
+    /* ============================================================
+       LAYER REGISTRY (drives Layers tab + Sandbox target dropdown)
+       ============================================================ */
+    const LAYERS = [
+        { name: "Core Mint Contract (Master Issuer)",  id: "GA3ECRFJ6SO5BW6NEIKW3ACJXNG5UNBTLRRXWC742NHUEDV6KL3RNEN6", scope: "all",  color: "text-white",     bg: "bg-slate-800",       border: "border-slate-600",        sphere: "linear-gradient(135deg,#fde68a,#a16207)" },
+        { name: "PiRC2 Subscription (3–4 layer)",      id: "CCUF75B6W3HRJTJD6O7OXNI72HGJ7DERZ5MUNOMFMSK23ME5GUIKPFYV", scope: "cross",color: "text-pink-300",  bg: "bg-pink-900/20",     border: "border-pink-500/30",      sphere: "linear-gradient(135deg,#f9a8d4,#9d174d)" },
+        { name: "Red · Governance",                    id: "CC6WMAHKOPWY6HW46VNKTAV4DZZLRTTNMYLDEKCAICQGMCWV5PZYNTBO", scope: "layer",color: "text-red-400",   bg: "bg-red-900/20",      border: "border-red-500/30",       sphere: "linear-gradient(135deg,#fecaca,#7f1d1d)" },
+        { name: "Green · Pi Cash",                     id: "CBPG33E7RUX6MGU65IMM4HXCAGLA4OZRBOUWKQSBTIZWE2RD52VGWDT4", scope: "layer",color: "text-green-400", bg: "bg-green-900/20",    border: "border-green-500/30",     sphere: "linear-gradient(135deg,#bbf7d0,#14532d)" },
+        { name: "Orange · Register",                   id: "CB7T6TDSZ5B2MQI7NI4EG6ZASYPRMJ3XVUWS6BON4Z64OBMUJ4ZD6GKF", scope: "layer",color: "text-orange-400",bg: "bg-orange-900/20",   border: "border-orange-500/30",    sphere: "linear-gradient(135deg,#fed7aa,#7c2d12)" },
+        { name: "Yellow · Subscribe",                  id: "CANLSQUPUZYKE3S2HAIGXAHMOQWE4FVX5DS7GTL42BVKSNHLFVMQSDFF", scope: "layer",color: "text-yellow-300",bg: "bg-yellow-800/20",   border: "border-yellow-400/30",    sphere: "linear-gradient(135deg,#fef08a,#854d0e)" },
+        { name: "Blue · Extend",                       id: "CAMSQZTSCTF3MG4UEIAWKRZNSX7LLKGKXMVBEQO2ETVPGS3CINM7JBQD", scope: "layer",color: "text-blue-400",  bg: "bg-blue-900/20",     border: "border-blue-500/30",      sphere: "linear-gradient(135deg,#bfdbfe,#1e3a8a)" },
+        { name: "Purple · Pay Upfront (all-layer)",    id: "CCGEMIEAZFJSBTRL5VGJJAUGPJI3B7UQ3BTAB2OQGW73JMWLS57YVVA4", scope: "all",  color: "text-purple-400",bg: "bg-purple-900/20",   border: "border-purple-500/30",    sphere: "linear-gradient(135deg,#e9d5ff,#581c87)" },
+        { name: "Gold · Status",                       id: "CD3UAUN4FU3VHPMLOZWFQWJ2UBUUBBD37SZ7WBEGJQACJ7YF6QVE2SYG", scope: "layer",color: "text-yellow-500",bg: "bg-yellow-900/20",   border: "border-yellow-500/30",    sphere: "linear-gradient(135deg,#fde68a,#713f12)" }
+    ];
+
+    const ISSUER_ACCOUNT = "GA3ECRFJ6SO5BW6NEIKW3ACJXNG5UNBTLRRXWC742NHUEDV6KL3RNEN6";
+    const HORIZON = "https://api.testnet.minepi.com";
+
+    /* ============================================================
+       UNIFIED SYSTEM LOG (lifecycle / log tab)
+       ============================================================ */
+    const LOG = [];
+    let LOG_FILTER = 'all';
+    function logEvent(category, msg, meta) {
+        const entry = { ts: Date.now(), category, msg, meta };
+        LOG.push(entry);
+        if (LOG.length > 500) LOG.shift();
+        renderLog();
+    }
+    function renderLog() {
+        const box = document.getElementById('logBox'); if (!box) return;
+        const items = LOG.filter(e => LOG_FILTER === 'all' || e.category === LOG_FILTER);
+        box.innerHTML = items.slice().reverse().map(e => {
+            const t = new Date(e.ts).toLocaleTimeString();
+            const tag = {
+                chain:  'text-blue-400',
+                market: 'text-yellow-300',
+                rpc:    'text-purple-300',
+                user:   'text-green-400'
+            }[e.category] || 'text-slate-400';
+            const meta = e.meta ? ` <span class="text-slate-500">${escapeHtml(JSON.stringify(e.meta))}</span>` : '';
+            return `<div class="mb-1"><span class="text-slate-500">[${t}]</span> <span class="${tag} font-bold">[${e.category.toUpperCase()}]</span> <span class="text-slate-200">${escapeHtml(e.msg)}</span>${meta}</div>`;
+        }).join('');
+    }
+    function setLogFilter(f) {
+        LOG_FILTER = f;
+        document.querySelectorAll('.logFilter').forEach(b => {
+            b.classList.toggle('bg-slate-700', b.dataset.filter === f);
+            b.classList.toggle('text-white',   b.dataset.filter === f);
+        });
+        renderLog();
+    }
+    function clearLog()  { LOG.length = 0; renderLog(); }
+    function exportLog() {
+        const blob = new Blob([JSON.stringify(LOG, null, 2)], { type: "application/json" });
+        const url  = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `pirc-log-${Date.now()}.json`; a.click();
+        URL.revokeObjectURL(url);
+        logEvent('user', 'Exported lifecycle log', { count: LOG.length });
+    }
+    function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+    /* ============================================================
+       TAB ROUTING
+       ============================================================ */
+    function switchTab(tabId) {
+        ['playground', 'explorer', 'layers', 'markets', 'lifecycle'].forEach(id => {
+            document.getElementById(`tab-${id}`).className = 'pb-3 px-2 tab-inactive transition-colors';
+            const c = document.getElementById(`content-${id}`);
+            c.classList.add('hidden');
+            c.classList.remove(id === 'playground' ? 'grid' : 'flex');
+        });
+        document.getElementById(`tab-${tabId}`).className = 'pb-3 px-2 tab-active transition-colors';
+        const target = document.getElementById(`content-${tabId}`);
+        target.classList.remove('hidden');
+        target.classList.add(tabId === 'playground' ? 'grid' : 'flex');
+        logEvent('user', `Switched to tab: ${tabId}`);
+    }
+
+    /* ============================================================
+       STELLAR SDK + LIVE NETWORK STATUS
+       ============================================================ */
+    const rpcServer = new StellarSdk.rpc.Server("https://soroban-testnet.stellar.org:443");
+
+    async function updateNetworkStatus() {
+        try {
+            const latest = await rpcServer.getLatestLedger();
+            document.getElementById('ledgerSequence').innerText = latest.sequence;
+            document.getElementById('rpcStatus').innerText = 'RPC Connected';
+        } catch (e) {
+            document.getElementById('rpcStatus').innerText = 'RPC Stalled';
+            logEvent('rpc', 'getLatestLedger failed', { error: e.message });
+        }
+    }
+    setInterval(updateNetworkStatus, 5000);
+    updateNetworkStatus();
+
+    /* ============================================================
+       LAYERS TAB — render spherical hybrid tokens
+       ============================================================ */
+    function explorerLinkContract(id) {
+        // Pi Testnet contracts are Stellar/Soroban contract IDs. stellar.expert testnet
+        // resolves these reliably; Pi's blockexplorer is provided as a secondary link.
+        return `https://stellar.expert/explorer/testnet/contract/${id}`;
+    }
+    function explorerLinkAccount(id) {
+        return `https://stellar.expert/explorer/testnet/account/${id}`;
+    }
+    function explorerLinkTx(hash) {
+        // FIX: previous build linked to https://minepi.com/blockexplorer/tx/{hash}
+        // which 404'd for Soroban-protocol transactions. stellar.expert testnet is the
+        // canonical mirror for these tx hashes on Pi Testnet.
+        return `https://stellar.expert/explorer/testnet/tx/${hash}`;
+    }
+
+    function renderLayers() {
+        const grid = document.getElementById('layersGrid');
+        const tcSel = document.getElementById('targetContract');
+        grid.innerHTML = '';
+        tcSel.innerHTML = '';
+        LAYERS.forEach(layer => {
+            const isAccount = layer.id.startsWith('G');
+            const link = isAccount ? explorerLinkAccount(layer.id) : explorerLinkContract(layer.id);
+            const scopeBadge =
+                layer.scope === 'all'   ? '<span class="text-purple-300">all layers</span>' :
+                layer.scope === 'cross' ? '<span class="text-pink-300">3–4 layers</span>'   :
+                                          '<span class="text-slate-400">single layer</span>';
+            grid.innerHTML += `
+                <div class="${layer.bg} p-4 rounded-xl border ${layer.border} hover:scale-[1.02] transition-transform">
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="sphere-token w-8 h-8 pulse-dot" style="background:${layer.sphere}"></div>
+                        <div class="font-bold ${layer.color} text-sm flex-1">${layer.name}</div>
+                    </div>
+                    <div class="text-[10px] text-slate-500 mb-1 uppercase tracking-wider flex justify-between">
+                        <span>${isAccount ? 'Account ID' : 'Contract ID'}</span>
+                        <span>scope: ${scopeBadge}</span>
+                    </div>
+                    <a href="${link}" target="_blank" rel="noopener" class="text-[10px] font-mono text-slate-300 break-all hover:text-blue-400 hover:underline">${layer.id}</a>
+                    <div class="mt-3 text-[10px] text-slate-400 flex justify-between">
+                        <span>Status: <span class="text-green-400">Active</span></span>
+                        <span>Network: Pi Testnet</span>
+                    </div>
+                </div>
+            `;
+            const opt = document.createElement('option');
+            opt.value = layer.id;
+            opt.textContent = `${layer.name} · ${layer.id.slice(0,10)}…`;
+            tcSel.appendChild(opt);
+        });
+    }
+    renderLayers();
+
+    /* ============================================================
+       LIVE TRANSACTIONS (Explorer tab)
+       ============================================================ */
+    const txTerminal = document.getElementById('txTerminal');
+    async function fetchLiveTransactions() {
+        txTerminal.innerHTML = '<div class="text-slate-500 font-mono text-sm">Fetching on-chain data…</div>';
+        try {
+            const r = await fetch(`${HORIZON}/accounts/${ISSUER_ACCOUNT}/transactions?limit=20&order=desc`);
+            const data = await r.json();
+            txTerminal.innerHTML = '';
+
+            const records = data._embedded && data._embedded.records ? data._embedded.records : [];
+            if (records.length === 0) {
+                txTerminal.innerHTML = '<div class="text-slate-400 font-mono text-sm">No transactions returned by Horizon for this account yet.</div>';
+                return;
+            }
+            records.forEach(tx => {
+                const time = new Date(tx.created_at).toLocaleTimeString();
+                const hashShort = tx.hash.substring(0, 24) + "…";
+                const isSuccess = tx.successful;
+                const statusColor = isSuccess ? "text-green-400" : "text-red-400";
+                const statusText  = isSuccess ? "SUCCESS" : "FAILED";
+                const link = explorerLinkTx(tx.hash);
+
+                const entry = `
+                    <div class="mb-3 pb-2 border-b border-slate-800 font-mono text-sm">
+                        <span class="text-slate-500">[${time}]</span>
+                        <span class="${statusColor} font-bold ml-2">[${statusText}]</span>
+                        <span class="text-purple-400 ml-2">Ops: ${tx.operation_count}</span>
+                        <span class="text-slate-500 ml-2">Fee: ${tx.fee_charged}</span><br>
+                        <span class="text-slate-500 ml-4">TxHash: </span>
+                        <a href="${link}" target="_blank" rel="noopener" class="text-blue-400 hover:underline">${hashShort}</a>
+                        <span class="text-slate-600 ml-2">·</span>
+                        <a href="${link}" target="_blank" rel="noopener" class="text-slate-400 hover:underline ml-1">verify</a>
+                    </div>
+                `;
+                txTerminal.innerHTML += entry;
+            });
+            logEvent('chain', `Fetched ${records.length} txs from Horizon`, { issuer: ISSUER_ACCOUNT });
+        } catch (error) {
+            txTerminal.innerHTML = `<div class="text-red-400 font-mono">Error fetching on-chain data: ${escapeHtml(error.message)}</div>`;
+            logEvent('chain', 'Horizon fetch failed', { error: error.message });
+        }
+    }
+    fetchLiveTransactions();
+    setInterval(fetchLiveTransactions, 15000);
+
+    /* ============================================================
+       MARKETS (prices / orderbook / trades)
+       ============================================================ */
+    const fmt = (n, d=4) => (n == null || isNaN(n)) ? '—' : Number(n).toLocaleString(undefined, { maximumFractionDigits: d });
+    let lastAggPrice = null;
+
+    async function fetchMarkets() {
+        try {
+            const [pRes, bRes, tRes] = await Promise.allSettled([
+                fetch('/api/prices'), fetch('/api/orderbook'), fetch('/api/trades')
+            ]);
+
+            // PRICES
+            if (pRes.status === 'fulfilled' && pRes.value.ok) {
+                const p = await pRes.value.json();
+                const agg = p.aggregated && p.aggregated.price;
+                if (agg != null) {
+                    const dir = lastAggPrice == null ? '' : (agg > lastAggPrice ? 'row-up' : (agg < lastAggPrice ? 'row-down' : ''));
+                    lastAggPrice = agg;
+                    document.getElementById('tkAgg').innerHTML = `<span class="${dir}">$${fmt(agg)}</span>`;
+                    document.getElementById('tkAggSrc').innerText = `sources: ${p.aggregated.sources}`;
+                }
+                if (p.okx) {
+                    document.getElementById('tkOkx').innerText = `$${fmt(p.okx.price)}`;
+                    document.getElementById('tkOkxChg').innerText = `24h: ${p.okx.changePct}%`;
+                    document.getElementById('tkOkxChg').className = (Number(p.okx.changePct) >= 0 ? 'row-up' : 'row-down');
+                }
+                if (p.mexc) {
+                    document.getElementById('tkMexc').innerText = `$${fmt(p.mexc.price)}`;
+                    document.getElementById('tkMexcChg').innerText = `24h: ${p.mexc.changePct}%`;
+                    document.getElementById('tkMexcChg').className = (Number(p.mexc.changePct) >= 0 ? 'row-up' : 'row-down');
+                }
+                if (p.klines && p.klines.length) {
+                    drawSparkline(p.klines);
+                    const first = p.klines[0], last = p.klines[p.klines.length - 1];
+                    document.getElementById('klineRange').innerText =
+                        `${new Date(first.time*1000).toLocaleTimeString()} → ${new Date(last.time*1000).toLocaleTimeString()} · ${p.klines.length} bars`;
+                }
+                logEvent('market', 'prices refreshed', { agg, sources: p.aggregated && p.aggregated.sources });
+            }
+
+            // ORDER BOOK
+            if (bRes.status === 'fulfilled' && bRes.value.ok) {
+                const b = await bRes.value.json();
+                const merge = (rows) => rows.slice(0, 12).map(r =>
+                    `<div class="flex justify-between"><span>${fmt(r.price, 6)}</span><span class="text-slate-400">${fmt(r.amount, 2)}</span></div>`
+                ).join('');
+                const bids = (b.okx && b.okx.bids ? b.okx.bids : []).concat(b.mexc && b.mexc.bids ? b.mexc.bids : []).sort((x,y)=>y.price-x.price);
+                const asks = (b.okx && b.okx.asks ? b.okx.asks : []).concat(b.mexc && b.mexc.asks ? b.mexc.asks : []).sort((x,y)=>x.price-y.price);
+                document.getElementById('bidsBox').innerHTML = merge(bids) || '<span class="text-slate-500">no data</span>';
+                document.getElementById('asksBox').innerHTML = merge(asks) || '<span class="text-slate-500">no data</span>';
+                document.getElementById('bookSpread').innerText = b.summary && b.summary.spread ? `${b.summary.spread} (${b.summary.spreadPct}%)` : '—';
+                document.getElementById('bookBuyP').innerText  = b.summary && b.summary.buyPressure ? `${b.summary.buyPressure}%` : '—';
+                document.getElementById('bookDepth').innerText = b.summary
+                    ? `${fmt(b.summary.totalBidVolume,0)} / ${fmt(b.summary.totalAskVolume,0)}`
+                    : '—';
+                document.getElementById('tkBook').innerText =
+                    (b.summary && b.summary.bestBid && b.summary.bestAsk)
+                        ? `${fmt(b.summary.bestBid)} / ${fmt(b.summary.bestAsk)}` : '—';
+                document.getElementById('tkSpread').innerText = b.summary && b.summary.spread ? `spread: ${b.summary.spreadPct}%` : 'spread: —';
+                document.getElementById('bookFreshness').innerText = new Date(b.timestamp).toLocaleTimeString();
+            }
+
+            // TRADES
+            if (tRes.status === 'fulfilled' && tRes.value.ok) {
+                const t = await tRes.value.json();
+                const rows = (t.trades || []).slice(0, 25).map(tr => {
+                    const cls = tr.side === 'buy' ? 'row-up' : 'row-down';
+                    const ts  = new Date(tr.timestamp).toLocaleTimeString();
+                    return `<div class="flex justify-between gap-3 ${cls}">
+                        <span>${ts}</span>
+                        <span>${tr.exchange.padEnd(4)}</span>
+                        <span>${tr.side.toUpperCase()}</span>
+                        <span>${fmt(tr.price, 6)}</span>
+                        <span class="text-slate-400">${fmt(tr.amount, 2)}</span>
+                    </div>`;
+                }).join('');
+                document.getElementById('tradesBox').innerHTML = rows || '<span class="text-slate-500">no trades</span>';
+                document.getElementById('tradesFreshness').innerText = new Date(t.timestamp).toLocaleTimeString();
+                if (t.trades && t.trades.length) {
+                    logEvent('market', `trades feed: ${t.trades.length} entries`, { latest: t.trades[0].price });
+                }
+            }
+        } catch (e) {
+            logEvent('market', 'market refresh failed', { error: e.message });
+        }
+    }
+    function drawSparkline(klines) {
+        const w = 800, h = 120, pad = 8;
+        const vals = klines.map(k => k.close);
+        const min = Math.min(...vals), max = Math.max(...vals);
+        const span = Math.max(max - min, 1e-9);
+        const stepX = (w - pad * 2) / Math.max(klines.length - 1, 1);
+        const pts = klines.map((k, i) => {
+            const x = pad + i * stepX;
+            const y = pad + (h - pad * 2) * (1 - (k.close - min) / span);
+            return `${x.toFixed(1)},${y.toFixed(1)}`;
+        }).join(' ');
+        const last = vals[vals.length - 1], first = vals[0];
+        const stroke = last >= first ? '#4ade80' : '#f87171';
+        document.getElementById('klineSparkline').innerHTML = `
+            <svg viewBox="0 0 ${w} ${h}" class="w-full h-32" preserveAspectRatio="none">
+              <polyline fill="none" stroke="${stroke}" stroke-width="1.5" points="${pts}" />
+              <text x="8" y="14"  fill="#94a3b8" font-size="10" font-family="monospace">low ${fmt(min,6)}</text>
+              <text x="8" y="${h-4}" fill="#94a3b8" font-size="10" font-family="monospace">high ${fmt(max,6)}</text>
+              <text x="${w-90}" y="14" fill="${stroke}" font-size="11" font-family="monospace">last ${fmt(last,6)}</text>
+            </svg>`;
+    }
+    fetchMarkets();
+    setInterval(fetchMarkets, 8000);
+
+    /* ============================================================
+       ORCHESTRATOR STATUS
+       ============================================================ */
+    async function fetchOrchestratorStatus() {
+        try {
+            const r = await fetch('/api/status');
+            if (!r.ok) return;
+            const s = await r.json();
+            const seq = s.issuer && s.issuer.sequence ? s.issuer.sequence : 'unavailable';
+            document.getElementById('statusIssuerSeq').innerText = seq;
+            const net = s.soroban && s.soroban.network && s.soroban.network.passphrase
+                ? s.soroban.network.passphrase.replace('Test SDF Network ; September 2015', 'Stellar Testnet')
+                : 'unavailable';
+            document.getElementById('statusSubNet').innerText = net;
+            const ledger = s.soroban && s.soroban.latest_ledger && s.soroban.latest_ledger.sequence
+                ? s.soroban.latest_ledger.sequence
+                : 'unavailable';
+            document.getElementById('statusLedger').innerText = ledger;
+            if (s.env) {
+                const flags = [
+                    'STELLAR_TESTNET_SECRET=' + (s.env.stellar_secret_present ? 'set' : 'missing'),
+                    'PI_API_KEY=' + (s.env.pi_api_key_present ? 'set' : 'missing'),
+                    'OMNI_SYNC_TOKEN=' + (s.env.omni_sync_token_present ? 'set' : 'missing')
+                ];
+                document.getElementById('statusEnv').innerText = flags.join(' · ');
+            }
+        } catch (e) { /* leave placeholders */ }
+    }
+    fetchOrchestratorStatus();
+    setInterval(fetchOrchestratorStatus, 30000);
+
+    /* ============================================================
+       PLAYGROUND — Soroban simulation
+       ============================================================ */
+    const simulateBtn = document.getElementById('simulateBtn');
+    const rpcOutput   = document.getElementById('rpcOutput');
+
+    simulateBtn.addEventListener('click', async () => {
+        const funcName = document.getElementById('funcSelect').value;
+        const target   = document.getElementById('targetContract').value;
+        rpcOutput.innerHTML = `<div class="text-yellow-400 animate-pulse">> Connecting to Soroban RPC…</div>`;
+        simulateBtn.disabled = true;
+        logEvent('user', `Simulate ${funcName} on ${target.slice(0,10)}…`);
+
+        try {
+            const randomCaller   = StellarSdk.Keypair.random();
+            const sourceAccount  = new StellarSdk.Account(randomCaller.publicKey(), "1");
+            const isAccount      = target.startsWith('G');
+            if (isAccount) {
+                rpcOutput.innerHTML = `<div class="text-yellow-400">Note: target is the issuer account (G…). Soroban simulation requires a contract ID (C…). Pick a layer contract from the dropdown.</div>`;
+                return;
+            }
+            const contract = new StellarSdk.Contract(target);
+
+            let operation;
+            if (funcName === 'check_phi_solvency') {
+                operation = contract.call(
+                    "check_phi_solvency",
+                    StellarSdk.nativeToScVal(1000000, { type: 'i128' }),
+                    StellarSdk.nativeToScVal(500000,  { type: 'i128' })
+                );
+            } else {
+                operation = contract.call(
+                    "mint_ref_capacity",
+                    new StellarSdk.Address("CCGEMIEAZFJSBTRL5VGJJAUGPJI3B7UQ3BTAB2OQGW73JMWLS57YVVA4").toScVal(),
+                    StellarSdk.nativeToScVal(0, { type: 'i128' }),
+                    StellarSdk.nativeToScVal(1, { type: 'i128' }),
+                    StellarSdk.nativeToScVal(0, { type: 'i128' }),
+                    StellarSdk.nativeToScVal(0, { type: 'i128' }),
+                    StellarSdk.nativeToScVal(0, { type: 'i128' })
+                );
+            }
+
+            const tx = new StellarSdk.TransactionBuilder(sourceAccount, {
+                fee: "10000",
+                networkPassphrase: StellarSdk.Networks.TESTNET,
+            }).addOperation(operation).setTimeout(30).build();
+
+            rpcOutput.innerHTML += `<div class="text-blue-400">> Sending XDR payload to network…</div>`;
+            const simulationResult = await rpcServer.simulateTransaction(tx);
+            rpcOutput.innerHTML = `<pre>${escapeHtml(JSON.stringify(simulationResult, null, 2))}</pre>`;
+            logEvent('rpc', `simulateTransaction ${funcName} ok`);
+        } catch (error) {
+            rpcOutput.innerHTML = `<div class="text-red-400">RPC Error: ${escapeHtml(error.message)}</div>`;
+            logEvent('rpc', 'simulateTransaction failed', { error: error.message });
+        } finally {
+            simulateBtn.disabled = false;
+        }
+    });
+
+    setLogFilter('all');
+    logEvent('user', 'Dashboard initialised', { layers: LAYERS.length });
+
+    /* ============================================================
+       PI PAYMENT SUPPORT
+       ============================================================ */
+    (function() {
+        async function postJson(url, body) {
+          const r = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body || {}),
+          });
+          const txt = await r.text();
+          return { ok: r.ok, status: r.status, text: txt };
+        }
+
+        async function initPay() {
+          const userEl = document.getElementById('usernameDisplay');
+          const statusEl = document.getElementById('statusDisplay');
+          const btn = document.getElementById('payBtn');
+
+          if (!window.Pi) {
+            statusEl.textContent = "Pi SDK not found";
+            return;
+          }
+
+          try {
+            statusEl.textContent = "Authenticating...";
+            const auth = await window.Pi.authenticate(["username", "payments"], function(incomplete) {
+               console.log("Incomplete payment found", incomplete);
+               logEvent('user', 'Incomplete payment found', incomplete);
+            });
+            
+            const username = auth.user.username;
+            document.getElementById('userAvatar').textContent = username.charAt(0).toUpperCase();
+            userEl.textContent = username;
+            statusEl.textContent = "Ready";
+
+            btn.onclick = async () => {
+              try {
+                statusEl.textContent = "Creating payment...";
+                const paymentData = {
+                  amount: 1.0,
+                  memo: "Support Developer",
+                  metadata: { kind: "support" }
+                };
+
+                const callbacks = {
+                  onReadyForServerApproval: (id) => {
+                    statusEl.textContent = "Approving...";
+                    postJson("/.netlify/functions/pi-approve", { paymentId: id, accessToken: auth.accessToken })
+                      .then(res => {
+                          statusEl.textContent = res.ok ? "Approved" : "Approve failed";
+                          logEvent('user', 'Payment approval status', { id, ok: res.ok });
+                      });
+                  },
+                  onReadyForServerCompletion: (id, txid) => {
+                    statusEl.textContent = "Completing...";
+                    postJson("/.netlify/functions/pi-complete", { paymentId: id, txid, accessToken: auth.accessToken })
+                      .then(res => {
+                          statusEl.textContent = res.ok ? "Done! Thank you." : "Complete failed";
+                          logEvent('user', 'Payment completion status', { id, txid, ok: res.ok });
+                      });
+                  },
+                  onCancel: () => {
+                      statusEl.textContent = "Cancelled";
+                      logEvent('user', 'Payment cancelled');
+                  },
+                  onError: (err) => {
+                      statusEl.textContent = "Error: " + err.message;
+                      logEvent('user', 'Payment error', { error: err.message });
+                  }
+                };
+
+                window.Pi.createPayment(paymentData, callbacks);
+              } catch (e) {
+                statusEl.textContent = "Failed: " + e.message;
+                logEvent('user', 'Payment creation failed', { error: e.message });
+              }
+            };
+          } catch (e) {
+            statusEl.textContent = "Auth failed: " + e.message;
+            logEvent('user', 'Auth failed', { error: e.message });
+          }
+        }
+        
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", initPay);
+        } else {
+          initPay();
+        }
+    })();
+    </script>
+</body>
+</html>

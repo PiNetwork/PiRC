@@ -1,0 +1,40 @@
+name: PiRC Deploy to Testnet
+
+on:
+  workflow_dispatch: # Allows manual trigger
+
+jobs:
+  deploy-soroban:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: 🧠 Smart Dependency Resolver (Auto-Fix Missing Libs)
+        run: |
+          echo "Scanning and installing all required system libraries for blockchain compilation..."
+          sudo apt-get update
+          # تثبيت كل المكتبات التي قد يحتاجها أي عقد ذكي أو أداة بلوكتشين لتجنب أي أخطاء مستقبلية
+          sudo apt-get install -y build-essential pkg-config libssl-dev libdbus-1-dev libudev-dev clang gcc libc6-dev make cmake
+          echo "✅ System dependencies resolved."
+
+      - name: Install Rust target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: 🔨 Install Stellar CLI (Robust Build)
+        run: |
+          echo "Building Stellar CLI..."
+          cargo install --locked stellar-cli
+          echo "✅ Stellar CLI installed successfully."
+
+      - name: Make Script Executable
+        run: chmod +x scripts/automation/deploy_soroban_contracts.sh
+
+      - name: 🚀 Run Smart Deployment Factory
+        env:
+          STELLAR_TESTNET_SECRET: ${{ secrets.STELLAR_TESTNET_SECRET }}
+          DISTRIBUTOR_SECRET: ${{ secrets.DISTRIBUTOR_SECRET }}
+        run: ./scripts/automation/deploy_soroban_contracts.sh

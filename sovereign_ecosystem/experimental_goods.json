@@ -1,0 +1,7 @@
+{
+  "market_status": "Active",
+  "last_transaction": "TXN-E1B9703FF753",
+  "inventory": [
+    {"item": "Philosophical Wood & Iron Garden", "status": "Tokenized", "contract": "rwa_garden"}
+  ]
+}

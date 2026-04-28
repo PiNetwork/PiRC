@@ -1,0 +1,527 @@
+{
+  "core": {
+    "schema": "pirc.contracts-registry/v2",
+    "master_issuer": {
+      "address": "GA3ECRFJ6SO5BW6NEIKW3ACJXNG5UNBTLRRXWC742NHUEDV6KL3RNEN6",
+      "network": "Pi Testnet (Stellar/Soroban)",
+      "role": "Issuer for the 7 colored Project Packets",
+      "horizon": "https://api.testnet.minepi.com",
+      "explorer": "https://stellar.expert/explorer/testnet/account/GA3ECRFJ6SO5BW6NEIKW3ACJXNG5UNBTLRRXWC742NHUEDV6KL3RNEN6"
+    },
+    "pirc2_subscription": {
+      "address": "CCUF75B6W3HRJTJD6O7OXNI72HGJ7DERZ5MUNOMFMSK23ME5GUIKPFYV",
+      "network": "Pi Testnet (Soroban)",
+      "role": "Recurring payments via Soroban token allowance (no re-signing)",
+      "soroban_rpc": "https://soroban-testnet.stellar.org:443",
+      "explorer": "https://stellar.expert/explorer/testnet/contract/CCUF75B6W3HRJTJD6O7OXNI72HGJ7DERZ5MUNOMFMSK23ME5GUIKPFYV"
+    },
+    "packets": {
+      "registry": "7_layer_packets.json",
+      "colors": ["RED", "GREEN", "ORANGE", "YELLOW", "BLUE", "PURPLE", "GOLD"]
+    }
+  },
+  "pirc_1": {
+    "id": "1",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_1",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_100": {
+    "id": "100",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_100",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_101": {
+    "id": "101",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_101",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_102": {
+    "id": "102",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_102",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_103": {
+    "id": "103",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_103",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_105": {
+    "id": "105",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_105",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_111": {
+    "id": "111",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_111",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_112": {
+    "id": "112",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_112",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_120": {
+    "id": "120",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_120",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_121": {
+    "id": "121",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_121",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_131": {
+    "id": "131",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_131",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_135": {
+    "id": "135",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_135",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_141": {
+    "id": "141",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_141",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_151": {
+    "id": "151",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_151",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_155": {
+    "id": "155",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_155",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_161": {
+    "id": "161",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_161",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_171": {
+    "id": "171",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_171",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_180": {
+    "id": "180",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_180",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_181": {
+    "id": "181",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_181",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_196": {
+    "id": "196",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_196",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_199": {
+    "id": "199",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_199",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_2": {
+    "id": "2",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_2",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_200": {
+    "id": "200",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_200",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_201": {
+    "id": "201",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_201",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_202": {
+    "id": "202",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_202",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_203": {
+    "id": "203",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_203",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_204": {
+    "id": "204",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_204",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_205": {
+    "id": "205",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_205",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_206": {
+    "id": "206",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_206",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_207": {
+    "id": "207",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_207",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_208": {
+    "id": "208",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_208",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_209": {
+    "id": "209",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_209",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_210": {
+    "id": "210",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_210",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_211": {
+    "id": "211",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_211",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_212": {
+    "id": "212",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_212",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_213": {
+    "id": "213",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_213",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_214": {
+    "id": "214",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_214",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_215": {
+    "id": "215",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_215",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_216": {
+    "id": "216",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_216",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_217": {
+    "id": "217",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_217",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_218": {
+    "id": "218",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_218",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_219": {
+    "id": "219",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_219",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_220": {
+    "id": "220",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_220",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_221": {
+    "id": "221",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_221",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_222": {
+    "id": "222",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_222",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_223": {
+    "id": "223",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_223",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_224": {
+    "id": "224",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_224",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_225": {
+    "id": "225",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_225",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_226": {
+    "id": "226",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_226",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_227": {
+    "id": "227",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_227",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_228": {
+    "id": "228",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_228",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_229": {
+    "id": "229",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_229",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_230": {
+    "id": "230",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_230",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_231": {
+    "id": "231",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_231",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_232": {
+    "id": "232",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_232",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_233": {
+    "id": "233",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_233",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_234": {
+    "id": "234",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_234",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_235": {
+    "id": "235",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_235",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_236": {
+    "id": "236",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_236",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_237": {
+    "id": "237",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_237",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_238": {
+    "id": "238",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_238",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_239": {
+    "id": "239",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_239",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_240": {
+    "id": "240",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_240",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_241": {
+    "id": "241",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_241",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_242": {
+    "id": "242",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_242",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_243": {
+    "id": "243",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_243",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_244": {
+    "id": "244",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_244",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_245": {
+    "id": "245",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_245",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_246": {
+    "id": "246",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_246",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_247": {
+    "id": "247",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_247",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_248": {
+    "id": "248",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_248",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_249": {
+    "id": "249",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_249",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_250": {
+    "id": "250",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_250",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_251": {
+    "id": "251",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_251",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_252": {
+    "id": "252",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_252",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_253": {
+    "id": "253",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_253",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_254": {
+    "id": "254",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_254",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_255": {
+    "id": "255",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_255",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_256": {
+    "id": "256",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_256",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_257": {
+    "id": "257",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_257",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_258": {
+    "id": "258",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_258",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_259": {
+    "id": "259",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_259",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_260": {
+    "id": "260",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_260",
+    "status": "Deployed",
+    "quantum_audit": true
+  },
+  "pirc_45": {
+    "id": "45",
+    "path": "Omni_Sovereign_Architecture/Compiled_Ecosystem/pirc_45",
+    "status": "Deployed",
+    "quantum_audit": true
+  }
+}

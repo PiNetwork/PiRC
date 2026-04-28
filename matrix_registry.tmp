@@ -1,0 +1,8 @@
+Layer|Color|Pi_Contract_ID|Stellar_Contract_ID|Role
+pirc_L0_Purple|Root Registry (Foundational Metadata)|./ultimate_pi_rpc_orchestrator.sh: line 56: soroban: command not found|./ultimate_pi_rpc_orchestrator.sh: line 59: soroban: command not found|Root Registry (Foundational Metadata)
+pirc_L1_Gold|Reserve Asset (Backing Currency)|./ultimate_pi_rpc_orchestrator.sh: line 56: soroban: command not found|./ultimate_pi_rpc_orchestrator.sh: line 59: soroban: command not found|Reserve Asset (Backing Currency)
+pirc_L2_Yellow|Utility Tier (High-Speed Operations)|./ultimate_pi_rpc_orchestrator.sh: line 56: soroban: command not found|./ultimate_pi_rpc_orchestrator.sh: line 59: soroban: command not found|Utility Tier (High-Speed Operations)
+pirc_L3_Orange|Settlement Engine (Instant Clearing)|./ultimate_pi_rpc_orchestrator.sh: line 56: soroban: command not found|./ultimate_pi_rpc_orchestrator.sh: line 59: soroban: command not found|Settlement Engine (Instant Clearing)
+pirc_L4_Blue|Liquidity Pool (AMM, Market Stability)|./ultimate_pi_rpc_orchestrator.sh: line 56: soroban: command not found|./ultimate_pi_rpc_orchestrator.sh: line 59: soroban: command not found|Liquidity Pool (AMM, Market Stability)
+pirc_L5_Green|PiCash Currency (Consumer P2P)|./ultimate_pi_rpc_orchestrator.sh: line 56: soroban: command not found|./ultimate_pi_rpc_orchestrator.sh: line 59: soroban: command not found|PiCash Currency (Consumer P2P)
+pirc_L6_Red|Governance DAO (DAO, Voting)|./ultimate_pi_rpc_orchestrator.sh: line 56: soroban: command not found|./ultimate_pi_rpc_orchestrator.sh: line 59: soroban: command not found|Governance DAO (DAO, Voting)
