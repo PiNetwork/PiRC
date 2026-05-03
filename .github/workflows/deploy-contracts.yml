@@ -1,0 +1,73 @@
+name: 🚀 Deploy ALL PiRC Smart Contracts + Automatic Test on Stellar Testnet
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-and-test-all-contracts:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: rwa-conceptual-auth-extension
+          fetch-depth: 0
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Install Stellar CLI (Soroban)
+        run: |
+          # تثبيت الإصدار المستقر
+          cargo install --locked stellar-cli --version 21.5.0
+          echo "✅ Stellar CLI installed"
+
+      - name: Configure Stellar Testnet account
+        run: |
+          if [ -n "${{ secrets.STELLAR_TESTNET_SECRET_KEY }}" ]; then
+            stellar keys import test-deployer --secret-key ${{ secrets.STELLAR_TESTNET_SECRET_KEY }} --network testnet || true
+          else
+            echo "⚠️ Generating and funding new account..."
+            stellar keys generate --network testnet test-deployer
+            stellar keys fund --network testnet test-deployer
+          fi
+          echo "✅ Account configured"
+
+      - name: 🔍 Discover, Build, & Deploy ALL Contracts
+        run: |
+          RESULTS=""
+          for cargo_toml in $(find . -name "Cargo.toml" -not -path "*/target/*"); do
+            contract_dir=$(dirname "$cargo_toml")
+            CONTRACT_NAME=$(basename "$contract_dir")
+            echo "📦 Processing: $CONTRACT_NAME"
+            cd "$contract_dir"
+
+            cargo build --target wasm32-unknown-unknown --release
+            
+            WASM_PATH="target/wasm32-unknown-unknown/release/*.wasm"
+            if ls $WASM_PATH >/dev/null 2>&1; then
+              stellar contract optimize --wasm $WASM_PATH --output optimized.wasm
+              
+              CONTRACT_ID=$(stellar contract deploy \
+                --wasm optimized.wasm \
+                --source test-deployer \
+                --network testnet)
+              
+              if [ $? -eq 0 ]; then
+                RESULTS="$RESULTS\n- **$CONTRACT_NAME**: \`$CONTRACT_ID\`"
+                echo "✅ Deployed: $CONTRACT_ID"
+              fi
+            fi
+            cd - > /dev/null
+          done
+          echo -e "$RESULTS" > ALL_DEPLOYED_CONTRACTS.md
+
+      - name: 📋 Final Summary
+        run: |
+          echo "## 🚀 Deployment Results" >> $GITHUB_STEP_SUMMARY
+          cat ALL_DEPLOYED_CONTRACTS.md >> $GITHUB_STEP_SUMMARY

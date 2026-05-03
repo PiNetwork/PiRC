@@ -1,0 +1,20 @@
+[
+  {
+    "id": "RWA-001-WOOD-IRON",
+    "name": "Philosophical Solar Clock",
+    "origin": "Jordan Workshop",
+    "materials": ["Aged Wood", "Industrial Iron"],
+    "symbolism": ["Pharaonic", "Babylonian", "Pi-Symbol"],
+    "price_pichash": 314,
+    "status": "Ready for Tokenization"
+  },
+  {
+    "id": "RWA-002-LOTUS-SHELF",
+    "name": "7-Layer Matrix Shelf",
+    "origin": "University Design Project",
+    "materials": ["Oak Wood", "Forged Iron"],
+    "symbolism": ["Lotus Flower", "Sovereign Layers"],
+    "price_pichash": 700,
+    "status": "Available"
+  }
+]

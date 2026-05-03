@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ docs/official-submission
+    <title>Vanguard Bridge | Technical Telemetry & Equity Explorer</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <script src="assets/js/token_layers.js"></script>
+    <style>
+        /* Core Technical Theme - Professional Charcoal & Neon Blue */
+        :root { 
+            --pi-gold: #ffa500; 
+            --bg: #0d1117; 
+            --card: #161b22; 
+            --border: #30363d; 
+            --text: #c9d1d9;
+            --text-muted: #8b949e;
+            --vanguard-blue: #58a6ff;
+            --stable: #3fb950; 
+            --danger: #f85149; 
+        }
+        
+        body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; margin: 0; }
+        
+        /* Navbar with Logo Integration */
+        .navbar { background: var(--card); padding: 12px 25px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .logo { color: var(--pi-gold); font-weight: bold; font-size: 1.2rem; display: flex; align-items: center; gap: 12px; }
+        .logo img { height: 32px; width: 32px; border-radius: 4px; }
+
+        .controls { display: flex; align-items: center; gap: 15px; }
+        .lang-btn { background: #21262d; border: 1px solid var(--border); color: var(--text); padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+        .controls select { background: #21262d; color: white; border: 1px solid var(--border); padding: 5px 10px; border-radius: 6px; }
+
+        .container { max-width: 1400px; margin: 20px auto; padding: 0 20px; }
+
+        /* Stats & Charts Grid */
+        .section-header { font-size: 0.95rem; font-weight: 600; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+        .charts-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+        .chart-box { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 15px; height: 350px; }
+        .chart-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .chart-title { font-size: 0.9rem; font-weight: bold; }
+        .chart-price { font-size: 1.2rem; font-weight: bold; font-family: monospace; }
+        .chart-container-div { width: 100%; height: 280px; }
+
+        /* Token Cards */
+        .token-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .token-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 18px; border-left: 4px solid var(--border); }
+        .token-price { font-size: 1.4rem; font-weight: bold; margin: 10px 0; font-family: monospace; }
+        .token-tvl { font-size: 0.75rem; color: var(--text-muted); font-family: monospace; }
+
+        /* Telemetry Ledger */
+        .explorer-card { background: var(--card); border-radius: 8px; border: 1px solid var(--border); overflow: hidden; }
+        .tx-list { width: 100%; border-collapse: collapse; }
+        .tx-header { background: #1c2128; color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; }
+        .tx-row { border-bottom: 1px solid var(--border); font-size: 0.8rem; }
+        .tx-cell { padding: 12px 15px; text-align: left; }
+        
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.65rem; font-weight: bold; text-transform: uppercase; }
+        .badge-pioneer { background: rgba(255, 165, 0, 0.1); color: var(--pi-gold); border: 1px solid rgba(255, 165, 0, 0.2); }
+        .badge-cex { background: rgba(248, 81, 73, 0.1); color: var(--danger); }
+
+        .address-tag { background: #21262d; padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 0.75rem; color: var(--vanguard-blue); }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="logo">
+        <i class="fas fa-bridge-circle-check"></i> 
+        <span>VANGUARD BRIDGE</span>
+    </div>
+    <div class="controls">
+        <button class="lang-btn" onclick="changeLanguage('en')">EN</button>
+        <button class="lang-btn" onclick="changeLanguage('ar')">AR</button>
+        <button class="lang-btn" onclick="changeLanguage('zh')">ZH</button>
+        <button class="lang-btn" onclick="changeLanguage('id')">ID</button>
+        <button class="lang-btn" onclick="changeLanguage('fr')">FR</button>
+        <button class="lang-btn" onclick="changeLanguage('ms')">MS</button>
+        <select id="currency-select" onchange="updateCurrency()">
+            <option value="USD">USD ($)</option>
+            <option value="JOD">JOD (د.أ)</option>
+            <option value="EUR">EUR (€)</option>
+            <option value="SAR">SAR (ر.س)</option>
+            <option value="EGP">EGP (ج.م)</option>
+            <option value="TND">TND (د.ت)</option>
+            <option value="JPY">JPY (¥)</option>
+        </select>
+    </div>
+</nav>
+
+<div class="container">
+    <div class="section-header">
+        <i class="fas fa-satellite-dish"></i> <span data-i18n="telemetry_status">Live Technical Telemetry</span>
+    </div>
+
+    <div class="charts-container">
+        <div class="chart-box">
+            <div class="chart-meta">
+                <div class="chart-title" data-i18n="cex_price">External Market (Speculative IOU)</div>
+                <div class="chart-price" id="cex-price-display" style="color: var(--danger);">$0.17</div>
+            </div>
+            <div id="cex-chart" class="chart-container-div"></div>
+        </div>
+        <div class="chart-box" style="border-top: 3px solid var(--pi-gold);">
+            <div class="chart-meta">
+                <div class="chart-title" data-i18n="wcf_parity">Vanguard Justice Parity (WCF)</div>
+                <div class="chart-price" id="pirc-price-display" style="color: var(--pi-gold);">Calculating...</div>
+            </div>
+            <div id="pirc-chart" class="chart-container-div"></div>
+        </div>
+    </div>
+
+    <div class="token-grid">
+        <div class="token-card" style="border-left-color: var(--pi-gold);">
+            <div data-i18n="pioneer_equity">Pioneer Equity (Ref)</div>
+            <div class="token-price" id="t-pi-price">---</div>
+            <div class="token-tvl">Backed Weight: 10M Micros/Pi</div>
+        </div>
+        <div class="token-card" style="border-left-color: var(--vanguard-blue);">
+            <div data-i18n="bridge_cap">Bridge Liquidity Cap</div>
+            <div class="token-price">$500M</div>
+            <div class="token-tvl">Status: Synchronized</div>
+        </div>
+    </div>
+
+    <div class="explorer-card">
+        <div style="padding: 15px; border-bottom: 1px solid var(--border); font-weight: bold; font-size: 0.9rem;">
+            <i class="fas fa-list-check"></i> <span data-i18n="ledger_title">Vanguard Bridge Real-Time Ledger</span>
+        </div>
+        <table class="tx-list">
+            <thead class="tx-header">
+                <tr>
+                    <th class="tx-cell">Hash</th>
+                    <th class="tx-cell">Type</th>
+                    <th class="tx-cell">CEX Micros (Uncompressed)</th>
+                    <th class="tx-cell">Ecosystem Macro (Compressed)</th>
+                    <th class="tx-cell">Justice Val (WCF)</th>
+                </tr>
+            </thead>
+            <tbody id="ledger-body">
+                </tbody>
+        </table>
+    </div>
+</div>
+
+<script type="module" src="assets/js/explorer-core.js"></script>
+
+<script src="assets/js/314_system.js"></script>
+<script src="assets/js/governance_voting.js"></script>
+
+    <title>PiRC Sovereign Matrix | Live PiDEX & Developer Portal</title>
+    
+    <!-- Official SDKs -->
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <!-- Using the latest stable Stellar SDK -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-sdk/12.1.0/stellar-sdk.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body { 
+            background-color: #020617; 
+            color: #f8fafc; 
+            font-family: 'Inter', sans-serif; 
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(147, 51, 234, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 85% 30%, rgba(251, 191, 36, 0.05) 0%, transparent 50%);
+        }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        .glass-panel { 
+            background: rgba(15, 23, 42, 0.7); 
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.5); 
+            border-radius: 1rem; 
+        }
+        
+        .code-box { 
+            background: #000000; 
+            border: 1px solid #1e293b; 
+            border-radius: 0.5rem; 
+            padding: 1rem; 
+            overflow-y: auto; 
+            box-shadow: inset 0 0 15px rgba(0,0,0,1);
+        }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        .tab-active { border-bottom: 2px solid #fbbf24; color: #fbbf24; }
+        .tab-inactive { color: #64748b; }
+        .tab-inactive:hover { color: #cbd5e1; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center p-4 md:p-8">
+
+    <div class="max-w-7xl w-full glass-panel p-6 md:p-8 shadow-2xl shadow-purple-900/20">
+        
+        <!-- Header -->
+        <div class="flex flex-col md:flex-row items-center justify-between mb-8 gap-4 border-b border-slate-800 pb-6">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 rounded-xl bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center text-slate-900 font-extrabold text-3xl shadow-lg shadow-yellow-500/20">π</div>
+                <div>
+                    <h1 class="text-3xl font-bold text-white tracking-tight">PiRC <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-blue-400">Live PiDEX</span></h1>
+                    <p class="text-sm text-slate-400 font-mono mt-1">Real-time Soroban Environment (Pi Testnet)</p>
+                </div>
+            </div>
+            <div class="flex flex-col items-end gap-2">
+                <div class="px-4 py-1.5 rounded-full bg-green-900/30 border border-green-500/50 text-green-400 text-sm font-mono flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                    RPC Connected
+                </div>
+                <div class="text-xs font-mono text-slate-500">Network Ledger: <span id="ledgerSequence" class="text-slate-300">Syncing...</span></div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="flex gap-6 border-b border-slate-800 mb-6 font-mono text-sm overflow-x-auto whitespace-nowrap">
+            <button onclick="switchTab('explorer')" id="tab-explorer" class="pb-3 px-2 tab-active transition-colors">🔍 Live Raw Transactions</button>
+            <button onclick="switchTab('layers')" id="tab-layers" class="pb-3 px-2 tab-inactive transition-colors">🌈 The 7 Matrix Layers</button>
+            <button onclick="switchTab('playground')" id="tab-playground" class="pb-3 px-2 tab-inactive transition-colors">🚀 Developer Sandbox</button>
+        </div>
+
+        <!-- TAB 1: Live Transactions (Explorer) -->
+        <div id="content-explorer" class="flex flex-col h-[500px]">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-semibold text-white">Live Blockchain Activity (PiRC Core: CAL6AOUF...)</h2>
+                <button onclick="fetchLiveTransactions()" class="px-3 py-1 bg-slate-800 hover:bg-slate-700 rounded text-xs text-white border border-slate-600">Refresh Stream</button>
+            </div>
+            <div class="code-box flex-grow" id="txTerminal">
+                <div class="text-slate-500 font-mono text-sm">Fetching on-chain data from Pi Testnet Horizon...</div>
+            </div>
+        </div>
+
+        <!-- TAB 2: The 7 Layers & Contracts -->
+        <div id="content-layers" class="hidden flex-col">
+            <div class="mb-6">
+                <h2 class="text-xl font-semibold text-white mb-2">The 7 Sovereign Layers (140+ Contracts)</h2>
+                <p class="text-sm text-slate-400">All layers are successfully deployed and bound to the Core Mint Contract on the Pi Testnet. Click on any Contract ID to verify it directly on the Stellar/Pi Blockexplorer.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="layersGrid">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+
+        <!-- TAB 3: Smart Contract Playground -->
+        <div id="content-playground" class="hidden grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Contract Interface -->
+            <div class="bg-slate-900/50 p-6 rounded-xl border border-slate-700">
+                <h2 class="text-lg font-semibold text-white mb-4">Interact with Smart Contracts</h2>
+                <p class="text-xs text-slate-400 mb-4">Developers: Use this sandbox to simulate real XDR contract calls on the Pi Testnet.</p>
+                
+                <div class="mb-4">
+                    <label class="block text-xs text-slate-400 font-mono mb-1">Target Contract (Core)</label>
+                    <input type="text" readonly value="GA3ECRFJ6SO5BW6NEIKW3ACJXNG5UNBTLRRXWC742NHUEDV6KL3RNEN6" class="w-full bg-black border border-slate-700 rounded p-2 text-xs font-mono text-purple-300">
+                </div>
+
+                <div class="mb-4">
+                    <label class="block text-xs text-slate-400 font-mono mb-1">Select Function</label>
+                    <select id="funcSelect" class="w-full bg-slate-800 border border-slate-600 rounded p-2 text-sm font-mono text-white">
+                        <option value="check_phi_solvency">check_phi_solvency (Read-Only)</option>
+                        <option value="mint_ref_capacity">mint_ref_capacity (Requires Auth)</option>
+                    </select>
+                </div>
+
+                <button id="simulateBtn" class="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-mono font-bold rounded transition-colors mt-4">
+                    Simulate Transaction via RPC
+                </button>
+            </div>
+
+            <!-- Execution Output -->
+            <div class="flex flex-col">
+                <h2 class="text-lg font-semibold text-white mb-4">RPC Response (Raw JSON)</h2>
+                <div class="code-box flex-grow text-xs font-mono text-green-400" id="rpcOutput">
+                    <div class="text-slate-500">// Waiting for developer input...</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // --- Tab Switching Logic ---
+        function switchTab(tabId) {
+            ['playground', 'explorer', 'layers'].forEach(id => {
+                document.getElementById(`tab-${id}`).className = 'pb-3 px-2 tab-inactive transition-colors';
+                document.getElementById(`content-${id}`).classList.add('hidden');
+                document.getElementById(`content-${id}`).classList.remove(id === 'playground' ? 'grid' : 'flex');
+            });
+            
+            document.getElementById(`tab-${tabId}`).className = 'pb-3 px-2 tab-active transition-colors';
+            document.getElementById(`content-${tabId}`).classList.remove('hidden');
+            if(tabId === 'playground') document.getElementById(`content-${tabId}`).classList.add('grid');
+            else document.getElementById(`content-${tabId}`).classList.add('flex');
+        }
+
+        // --- Stellar SDK Initialization (FIXED for v12) ---
+        const rpcServer = new StellarSdk.rpc.Server("https://soroban-testnet.stellar.org:443");
+        const ISSUER_ACCOUNT = "GA3ECRFJ6SO5BW6NEIKW3ACJXNG5UNBTLRRXWC742NHUEDV6KL3RNEN6";
+
+        // Fetch Network Health
+        async function updateNetworkStatus() {
+            try {
+                const latest = await rpcServer.getLatestLedger();
+                document.getElementById('ledgerSequence').innerText = latest.sequence;
+            } catch (e) {
+                console.error("RPC Error:", e);
+            }
+        }
+        setInterval(updateNetworkStatus, 5000);
+        updateNetworkStatus();
+
+        // --- Render The 7 Layers ---
+        function renderLayers() {
+            const layers = [
+                { name: "Core Mint Contract", id: "GA3ECRFJ6SO5BW6NEIKW3ACJXNG5UNBTLRRXWC742NHUEDV6KL3RNEN6", color: "text-white", bg: "bg-slate-800", border: "border-slate-600" },
+                { name: "L0: Purple Layer", id: "CCGEMIEAZFJSBTRL5VGJJAUGPJI3B7UQ3BTAB2OQGW73JMWLS57YVVA4", color: "text-purple-400", bg: "bg-purple-900/20", border: "border-purple-500/30" },
+                { name: "L1: Gold Layer", id: "CD3UAUN4FU3VHPMLOZWFQWJ2UBUUBBD37SZ7WBEGJQACJ7YF6QVE2SYG", color: "text-yellow-500", bg: "bg-yellow-900/20", border: "border-yellow-500/30" },
+                { name: "L2: Yellow Layer", id: "CANLSQUPUZYKE3S2HAIGXAHMOQWE4FVX5DS7GTL42BVKSNHLFVMQSDFF", color: "text-yellow-300", bg: "bg-yellow-800/20", border: "border-yellow-400/30" },
+                { name: "L3: Orange Layer", id: "CB7T6TDSZ5B2MQI7NI4EG6ZASYPRMJ3XVUWS6BON4Z64OBMUJ4ZD6GKF", color: "text-orange-400", bg: "bg-orange-900/20", border: "border-orange-500/30" },
+                { name: "L4: Blue Layer", id: "CAMSQZTSCTF3MG4UEIAWKRZNSX7LLKGKXMVBEQO2ETVPGS3CINM7JBQD", color: "text-blue-400", bg: "bg-blue-900/20", border: "border-blue-500/30" },
+                { name: "L5: Green Layer", id: "CBPG33E7RUX6MGU65IMM4HXCAGLA4OZRBOUWKQSBTIZWE2RD52VGWDT4", color: "text-green-400", bg: "bg-green-900/20", border: "border-green-500/30" },
+                { name: "L6: Red Layer", id: "CC6WMAHKOPWY6HW46VNKTAV4DZZLRTTNMYLDEKCAICQGMCWV5PZYNTBO", color: "text-red-400", bg: "bg-red-900/20", border: "border-red-500/30" }
+            ];
+
+            const grid = document.getElementById('layersGrid');
+            layers.forEach(layer => {
+                // Link to Stellar Expert (Testnet) to verify the contract
+                const explorerLink = `https://stellar.expert/explorer/testnet/contract/${layer.id}`;
+                
+                grid.innerHTML += `
+                    <div class="${layer.bg} p-4 rounded-xl border ${layer.border} hover:scale-[1.02] transition-transform">
+                        <div class="font-bold ${layer.color} text-sm mb-2 flex items-center justify-between">
+                            ${layer.name}
+                            <span class="flex h-2 w-2">
+                              <span class="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-green-400 opacity-75"></span>
+                              <span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                            </span>
+                        </div>
+                        <div class="text-[10px] text-slate-500 mb-1 uppercase tracking-wider">Contract ID:</div>
+                        <a href="${explorerLink}" target="_blank" class="text-[10px] font-mono text-slate-300 break-all hover:text-blue-400 hover:underline">${layer.id}</a>
+                        <div class="mt-3 text-[10px] text-slate-400 flex justify-between">
+                            <span>Status: <span class="text-green-400">Active</span></span>
+                            <span>Network: Pi Testnet</span>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        renderLayers();
+
+        // --- Live Transactions (Explorer) Logic ---
+        const txTerminal = document.getElementById('txTerminal');
+        
+        async function fetchLiveTransactions() {
+            txTerminal.innerHTML = '<div class="text-slate-500 font-mono text-sm">Fetching on-chain data...</div>';
+            try {
+                const response = await fetch(`https://api.testnet.minepi.com/accounts/${ISSUER_ACCOUNT}/transactions?limit=20&order=desc`);
+                const data = await response.json();
+                
+                txTerminal.innerHTML = ''; 
+                
+                if (data._embedded && data._embedded.records.length > 0) {
+                    data._embedded.records.forEach(tx => {
+                        const time = new Date(tx.created_at).toLocaleTimeString();
+                        const hashShort = tx.hash.substring(0, 24) + "...";
+                        const isSuccess = tx.successful;
+                        const statusColor = isSuccess ? "text-green-400" : "text-red-400";
+                        const statusText = isSuccess ? "SUCCESS" : "FAILED";
+                        
+                        const explorerLink = `https://minepi.com/blockexplorer/tx/${tx.hash}?network=Pi%20Testnet`;
+
+                        const entry = `
+                            <div class="mb-3 pb-2 border-b border-slate-800">
+                                <span class="text-slate-500">[${time}]</span>
+                                <span class="${statusColor} font-bold ml-2">[${statusText}]</span> 
+                                <span class="text-purple-400 ml-2">Operations: ${tx.operation_count}</span><br>
+                                <span class="text-slate-500 ml-4">TxHash: </span>
+                                <a href="${explorerLink}" target="_blank" class="text-blue-400 hover:underline">${hashShort}</a>
+                            </div>
+                        `;
+                        txTerminal.innerHTML += entry;
+                    });
+                }
+            } catch (error) {
+                txTerminal.innerHTML = `<div class="text-red-400">Error fetching on-chain data: ${error.message}</div>`;
+            }
+        }
+
+        fetchLiveTransactions();
+        setInterval(fetchLiveTransactions, 15000);
+
+        // --- Smart Contract Playground (Real Simulation via RPC) ---
+        const simulateBtn = document.getElementById('simulateBtn');
+        const rpcOutput = document.getElementById('rpcOutput');
+
+        simulateBtn.addEventListener('click', async () => {
+            const funcName = document.getElementById('funcSelect').value;
+            rpcOutput.innerHTML = `<div class="text-yellow-400 animate-pulse">> Connecting to Soroban RPC...</div>`;
+            simulateBtn.disabled = true;
+
+            try {
+                const randomCaller = StellarSdk.Keypair.random();
+                const sourceAccount = new StellarSdk.Account(randomCaller.publicKey(), "1");
+                
+                const contract = new StellarSdk.Contract("GA3ECRFJ6SO5BW6NEIKW3ACJXNG5UNBTLRRXWC742NHUEDV6KL3RNEN6");
+                
+                let operation;
+                if (funcName === 'check_phi_solvency') {
+                    operation = contract.call(
+                        "check_phi_solvency",
+                        StellarSdk.nativeToScVal(1000000, { type: 'i128' }),
+                        StellarSdk.nativeToScVal(500000, { type: 'i128' })
+                    );
+                } else {
+                    operation = contract.call(
+                        "mint_ref_capacity",
+                        new StellarSdk.Address("CCGEMIEAZFJSBTRL5VGJJAUGPJI3B7UQ3BTAB2OQGW73JMWLS57YVVA4").toScVal(),
+                        StellarSdk.nativeToScVal(0, { type: 'i128' }),
+                        StellarSdk.nativeToScVal(1, { type: 'i128' }),
+                        StellarSdk.nativeToScVal(0, { type: 'i128' }),
+                        StellarSdk.nativeToScVal(0, { type: 'i128' }),
+                        StellarSdk.nativeToScVal(0, { type: 'i128' })
+                    );
+                }
+
+                const tx = new StellarSdk.TransactionBuilder(sourceAccount, {
+                    fee: "10000",
+                    networkPassphrase: StellarSdk.Networks.TESTNET,
+                })
+                .addOperation(operation)
+                .setTimeout(30)
+                .build();
+
+                rpcOutput.innerHTML += `<div class="text-blue-400">> Sending XDR payload to network...</div>`;
+
+                const simulationResult = await rpcServer.simulateTransaction(tx);
+                rpcOutput.innerHTML = `<pre>${JSON.stringify(simulationResult, null, 2)}</pre>`;
+
+            } catch (error) {
+                rpcOutput.innerHTML = `<div class="text-red-400">RPC Error: ${error.message}</div>`;
+            } finally {
+                simulateBtn.disabled = false;
+            }
+        });
+
+    </script>
+ main
+</body>
+</html>

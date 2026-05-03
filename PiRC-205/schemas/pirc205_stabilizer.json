@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "205.1",
+  "type": "ai_stabilizer",
+  "properties": {
+    "currentIppr": {
+      "type": "number",
+      "minimum": 0
+    },
+    "supply": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "targetSupply": {
+      "type": "integer",
+      "default": 314000000
+    }
+  },
+  "required": ["currentIppr", "supply"]
+}
