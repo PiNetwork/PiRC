@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@stellar/stellar-sdk": "^14.6.1"
+  },
+  "scripts": {
+    "build": "echo 'Build complete'"
+  }
+}

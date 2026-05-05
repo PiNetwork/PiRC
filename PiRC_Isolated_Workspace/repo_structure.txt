@@ -1,0 +1,18 @@
+[34;42m.[0m
+├── [34;42m./PiRC1[0m
+│   ├── [34;42m./PiRC1/4-allocation[0m
+│   │   ├── ./PiRC1/4-allocation/4-allocation design 1.md
+│   │   └── ./PiRC1/4-allocation/4-allocation design 2.md
+│   ├── [34;42m./PiRC1/5-tge-state[0m
+│   │   ├── ./PiRC1/5-tge-state/5-tge-state design 1.md
+│   │   └── ./PiRC1/5-tge-state/5-tge-state design 2.md
+│   ├── ./PiRC1/1-vision.md
+│   ├── ./PiRC1/2-core-design.md
+│   ├── ./PiRC1/3-participation.md
+│   └── ./PiRC1/ReadMe.md
+├── ./LICENSE
+├── ./ReadMe.md
+├── ./repo_structure.txt
+└── [01;32m./restore-original-main.sh[0m
+
+4 directories, 12 files

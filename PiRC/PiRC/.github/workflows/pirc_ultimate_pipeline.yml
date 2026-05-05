@@ -1,0 +1,45 @@
+name: PiRC Ultimate Deployment Pipeline
+
+on:
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch: 
+  
+  # Runs automatically every day at midnight UTC (Optional)
+  schedule:
+    - cron: '0 0 * * *'
+
+# Grant permissions to the GITHUB_TOKEN to push commits back to the repository
+permissions:
+  contents: write
+
+jobs:
+  execute-deployment-script:
+    name: Run Ultimate Deployment & Sync
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history and branches so the script can merge them
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git Identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Ensure Script is Executable
+        run: |
+          if [ -f "pirc_ultimate_deployment.sh" ]; then
+            chmod +x ./pirc_ultimate_deployment.sh
+          else
+            echo "Error: pirc_ultimate_deployment.sh not found in the root directory!"
+            exit 1
+          fi
+
+      - name: Execute Ultimate Deployment Script
+        run: ./pirc_ultimate_deployment.sh
+        env:
+          # Pass the GitHub token so the bash script can push changes
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

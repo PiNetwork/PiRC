@@ -1,0 +1,11 @@
+./docs/PiRC-230-Parity-Registry-v2.md:- Automated supply vs. reserve differential analysis.
+./node_modules/@noble/curves/README.md:  [post-quantum](https://github.com/paulmillr/noble-post-quantum),
+./node_modules/@noble/curves/README.md:Cryptographically relevant quantum computer, if built, will allow to
+./node_modules/@noble/curves/README.md:[noble-post-quantum](https://github.com/paulmillr/noble-post-quantum).
+./node_modules/@noble/hashes/README.md:  [post-quantum](https://github.com/paulmillr/noble-post-quantum),
+./node_modules/@noble/hashes/README.md:Cryptographically relevant quantum computer, if built, will allow to
+./node_modules/safer-buffer/Porting-Buffer.md:  program source code to passwords and encryption keys.
+./node_modules/safer-buffer/Porting-Buffer.md:- Read uninitialized memory. This **will** leak passwords, encryption keys and other
+./scripts/deploy/deploy_pirc_v5_engine.sh:    def generate_quantum_key(self) -> str:
+./scripts/deploy/deploy_pirc_v5_engine.sh:        quantum_key = self.q_enc.generate_quantum_key()
+./scripts/deploy/deploy_pirc_v5_engine.sh:        encrypted = self.q_enc.encrypt(input_data, quantum_key)

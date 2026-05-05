@@ -1,0 +1,21 @@
+Ze0ro99/PiRC (Main Root)
+├── .github/
+│   └── workflows/
+│       ├── justice-master-system.yml      # The Master Orchestrator
+│       └── codeql-advanced.yml            # Security & Logic Auditor
+├── lib/
+│   └── pi-sdk.js                          # Local Pi SDK (Prevents 404 error)
+├── scripts/
+│   ├── justice_math_validator.py          # AI Math Auditor (10M:1 Ratio)
+│   ├── testnet_validator.js               # Blockchain Transaction Proof
+│   ├── pi_macro_economic_model.py         # Economic Simulation Logic
+│   └── inventory_audit.py                 # Warehouse/Branch Audit script
+├── src/
+│   ├── backend/                           # WMS & Logic Core
+│   └── frontend/                          # Dashboard & User Interface
+├── data/
+│   └── audit_logs/                        # Branch & Transaction History
+├── .gitignore                             # Files to exclude from upload
+├── LICENSE                                # Project License (MIT/GPL)
+└── README.md                              # Professional Project Overview
+

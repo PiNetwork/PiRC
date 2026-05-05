@@ -1,0 +1,27 @@
+version: "3.9"
+services:
+  api:
+    build: ./server
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgres://postgres:password@db:5432/pirc
+  db:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: pirc
+    ports:
+      - "5432:5432"
+  ipfs:
+    image: ipfs/kubo:latest
+    ports:
+      - "5001:5001"
+      - "8080:8080"
+  nginx:
+    image: nginx:latest
+    ports:
+      - "80:80"

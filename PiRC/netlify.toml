@@ -1,0 +1,61 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[functions]
+  node_bundler = "esbuild"
+
+# High-Security Headers to prevent ERR_BLOCKED_BY_RESPONSE in Pi Browser
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Content-Security-Policy = "frame-ancestors *;"
+    X-Frame-Options = "ALLOWALL"
+
+# Serverless API Routes mapping
+[[redirects]]
+  from = "/api/factory/raw-record"
+  to = "/.netlify/functions/factory-raw-record"
+  status = 200
+
+[[redirects]]
+  from = "/api/health"
+  to = "/.netlify/functions/health"
+  status = 200
+
+[[redirects]]
+  from = "/api/tvl"
+  to = "/.netlify/functions/tvl"
+  status = 200
+
+[[redirects]]
+  from = "/api/dashboard"
+  to = "/.netlify/functions/dashboard"
+  status = 200
+
+[[redirects]]
+  from = "/api/status"
+  to = "/.netlify/functions/status"
+  status = 200
+
+[[redirects]]
+  from = "/api/prices"
+  to = "/.netlify/functions/prices"
+  status = 200
+
+[[redirects]]
+  from = "/api/trades"
+  to = "/.netlify/functions/trades"
+  status = 200
+
+[[redirects]]
+  from = "/api/orderbook"
+  to = "/.netlify/functions/orderbook"
+  status = 200
+
+# React SPA Fallback
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

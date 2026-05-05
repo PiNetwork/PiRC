@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  pirc-core-contracts:
+    image: rust:1.77-slim
+    container_name: pirc-core
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: tail -f /dev/null
+    environment:
+      - NETWORK=TESTNET
+  
+  pirc-ai-quantum:
+    image: python:3.11-slim
+    container_name: pirc-ai-layer
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: python3 init_models.py
+    
+  pirc-frontend:
+    image: node:20-alpine
+    container_name: pirc-frontend
+    working_dir: /app/frontend
+    volumes:
+      - ./frontend:/app/frontend
+    ports:
+      - "3000:3000"
+    command: npm start

@@ -1,0 +1,20 @@
+name: PiRC Unified System
+
+on:
+  push:
+    branches:
+      - divine_justice
+      - feature/**
+      - contract/**
+      - audit/**
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Structure
+        run: |
+          test -d core || exit 1
+          test -d contracts || exit 1
+          test -d docs || exit 1

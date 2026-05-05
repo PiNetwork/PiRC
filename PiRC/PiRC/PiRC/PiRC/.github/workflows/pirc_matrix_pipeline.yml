@@ -1,0 +1,46 @@
+name: PiRC Matrix Unifier & Sync Pipeline
+
+on:
+  # Allows you to run this workflow manually from the GitHub Actions UI
+  workflow_dispatch: 
+  
+  # Optional: Runs automatically every Sunday at 02:00 UTC to ensure weekly sync
+  schedule:
+    - cron: '0 2 * * 0'
+
+# Grant permissions to the GITHUB_TOKEN to push commits back to the repository
+permissions:
+  contents: write
+
+jobs:
+  unify-and-sync:
+    name: Execute Matrix Unifier Script
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history and branches required for safe merging
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git Identity
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Make Script Executable
+        run: |
+          if [ -f "pirc_matrix_unifier_and_sync.sh" ]; then
+            chmod +x pirc_matrix_unifier_and_sync.sh
+            echo "✅ Script permissions updated successfully."
+          else
+            echo "❌ Error: pirc_matrix_unifier_and_sync.sh not found in the root directory!"
+            exit 1
+          fi
+
+      - name: Run Matrix Unifier & Sync Script
+        env:
+          # Pass the GitHub token so the bash script can push changes to the main branch
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./pirc_matrix_unifier_and_sync.sh

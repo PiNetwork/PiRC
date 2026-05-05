@@ -1,0 +1,105 @@
+name: Ultimate Justice Orchestrator (PiRC1-PiRC260)
+
+on:
+  push:
+    branches: ["**"] # Global monitoring for all active and future branches
+  pull_request:
+    branches: ["**"]
+
+permissions:
+  security-events: write
+  contents: write
+  actions: read
+
+jobs:
+  AI_Audit_and_Logic_Repair:
+    name: AI Security & PiRC Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Initialize CodeQL AI Engine
+        uses: github/codeql-action/init@v4
+        with:
+          languages: python, javascript-typescript, rust
+          build-mode: none # Critical: Ensures Rust and scripts scan without build errors
+
+      - name: PiRC Standards Compliance (1-260)
+        run: |
+          # Enforcing financial precision and weight ratios (10M:1)
+          # Ensure scripts/justice_math_validator.py exists in your repo
+          python scripts/justice_math_validator.py --deep-scan --standards 1-260
+
+      - name: Perform AI Security Audit
+        uses: github/codeql-action/analyze@v4
+        with:
+          category: "/justice-logic-security"
+
+  Blockchain_Testnet_Validation:
+    name: Blockchain & Environment Validation
+    needs: AI_Audit_and_Logic_Repair
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Setup Rust Toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Auto-Clean Syntax
+        run: |
+          pip install black
+          black scripts/*.py
+          # Force remove any problematic hidden files
+          find . -name "*.pyc" -delete
+
+
+      - name: Prepare Linux & Termux Mock Environment
+        run: |
+          sudo apt-get update
+          # Fixed: libarchive-tools provides bsdtar on Ubuntu runners
+          sudo apt-get install -y jq curl git libarchive-tools ncurses-bin
+          bsdtar --version
+
+      - name: Install Blockchain Dependencies
+        run: |
+          npm install stellar-sdk
+          # Local Pi SDK verification to avoid NPM 404 errors
+          if [ -f "./lib/pi-sdk.js" ]; then
+            echo "Pi SDK detected locally. ✅"
+          else
+            echo "ERROR: Missing /lib/pi-sdk.js. System cannot verify Pi transactions. ❌"
+            exit 1
+          fi
+
+      - name: Execute Testnet Transaction Proof
+        run: |
+          # Proving real-time consensus to the community
+          node scripts/testnet_validator.js --env production --proof real-time
+
+  Frontend_Backend_Build:
+    name: Production Deployment (Vercel)
+    needs: Blockchain_Testnet_Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Automated UI Assembly
+        run: |
+          npm install
+          npm run build
+
+      - name: Vercel Production Sync
+        uses: amondnet/vercel-action@v20
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.ORG_ID }}
+          vercel-project-id: ${{ secrets.PROJECT_ID }}
+          working-directory: ./dist

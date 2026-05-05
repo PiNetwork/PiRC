@@ -1,0 +1,36 @@
+# Netlify Configuration - Free Tier Optimized
+# Ensuring Continuous Deployment from GitHub
+
+[build]
+  # Public directory with index.html
+  publish = "."
+  
+  # Directory where netlify functions are located
+  functions = "netlify/functions"
+
+# Proxy rules to shorten API paths
+[[redirects]]
+  from = "/api/prices"
+  to = "/.netlify/functions/prices"
+  status = 200
+
+[[redirects]]
+  from = "/api/trades"
+  to = "/.netlify/functions/trades"
+  status = 200
+
+[[redirects]]
+  from = "/api/orderbook"
+  to = "/.netlify/functions/orderbook"
+  status = 200
+
+# Security Headers
+[[headers]]
+  for = "/*"
+  [headers.values]
+    # Restrict frame loading for anti-phishing
+    X-Frame-Options = "DENY"
+    # Basic CORS policy for conceptual functions
+    Access-Control-Allow-Origin = "*"
+    # Strict Origin Policy
+    Referrer-Policy = "strict-origin-when-cross-origin"

@@ -1,0 +1,2 @@
+cargo:rustc-check-cfg=cfg(docs)
+cargo:rustc-env=GIT_REVISION=dc9f40fcb83c3054341f70b65a2222073369b37b

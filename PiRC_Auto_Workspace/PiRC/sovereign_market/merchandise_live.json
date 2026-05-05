@@ -1,0 +1,20 @@
+[
+  {
+    "sku": "πRC-RWA-001",
+    "name": "Sovereign Solar Clock (Wood/Iron)",
+    "description": "Tokenized university project. First RWA on πRC.",
+    "contract_binding": "rwa_garden",
+    "base_price": 314.15,
+    "currency_options": ["PiCash", "Gold_Reserve", "Visa_Gateway"],
+    "aml_risk_score": "Low"
+  },
+  {
+    "sku": "πRC-RWA-002",
+    "name": "Lotus 7-Layer Shelf",
+    "description": "Functional accessory mapping the Sovereign Matrix.",
+    "contract_binding": "rwa_garden",
+    "base_price": 700.00,
+    "currency_options": ["PiCash", "Justice_Credit"],
+    "aml_risk_score": "Low"
+  }
+]

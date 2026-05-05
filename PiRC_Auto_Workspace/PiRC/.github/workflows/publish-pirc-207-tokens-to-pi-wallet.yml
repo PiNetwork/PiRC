@@ -1,0 +1,134 @@
+name: "PiRC-207: Professional RWA System Orchestrator"
+
+on:
+  workflow_dispatch:
+
+jobs:
+  full-deployment:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: npm install @stellar/stellar-sdk
+
+      - name: Execute Professional RWA Synthesis
+        env:
+          ISSUER_SECRET: ${{ secrets.STELLAR_TESTNET_SECRET }}
+          DISTRIBUTOR_SECRET: ${{ secrets.DISTRIBUTOR_SECRET }}
+        run: |
+          node - << 'EOF'
+          const StellarSDK = require("@stellar/stellar-sdk");
+          const fs = require('fs');
+          const server = new StellarSDK.Horizon.Server("https://api.testnet.minepi.com");
+          const NETWORK_PASSPHRASE = "Pi Testnet";
+
+          async function run() {
+            try {
+              const issuerKp = StellarSDK.Keypair.fromSecret(process.env.ISSUER_SECRET.trim());
+              const distKp = StellarSDK.Keypair.fromSecret(process.env.DISTRIBUTOR_SECRET.trim());
+              const issuerPK = issuerKp.publicKey();
+              const distPK = distKp.publicKey();
+
+              console.log("🚀 Starting System Orchestration...");
+              console.log("Issuer:", issuerPK);
+              console.log("Distributor:", distPK);
+
+              const issuerAcc = await server.loadAccount(issuerPK);
+              const distAcc = await server.loadAccount(distPK);
+              const fee = "20000"; // Increased fee for priority
+
+              const layers = [
+                { code: "PURPLE", name: "Layer 0 - Root Registry" },
+                { code: "GOLD",   name: "Layer 1 - Reserve Currency" },
+                { code: "YELLOW", name: "Layer 2 - Utility Tier" },
+                { code: "ORANGE", name: "Layer 3 - Governance" },
+                { code: "BLUE",   name: "Layer 4 - Liquidity" },
+                { code: "GREEN",  name: "Layer 5 - Ecosystem" },
+                { code: "RED",    name: "Layer 6 - Settlement" }
+              ];
+
+              // --- STEP 1: DISTRIBUTOR TRUSTLINES ---
+              console.log("🔗 Step 1: Establishing Trustlines...");
+              let trustTx = new StellarSDK.TransactionBuilder(distAcc, {
+                fee, networkPassphrase: NETWORK_PASSPHRASE,
+                timebounds: await server.fetchTimebounds(100)
+              });
+              
+              layers.forEach(l => {
+                trustTx.addOperation(StellarSDK.Operation.changeTrust({ 
+                  asset: new StellarSDK.Asset(l.code, issuerPK) 
+                }));
+              });
+
+              const sTrust = trustTx.build();
+              sTrust.sign(distKp);
+              await server.submitTransaction(sTrust);
+              console.log("✅ Trustlines active.");
+
+              // --- STEP 2: ISSUER MINTING & DOMAIN ---
+              console.log("💎 Step 2: Minting & Linking Domain...");
+              // Refresh account to get latest sequence
+              const issuerAccUpdated = await server.loadAccount(issuerPK);
+              let mintTx = new StellarSDK.TransactionBuilder(issuerAccUpdated, {
+                fee, networkPassphrase: NETWORK_PASSPHRASE,
+                timebounds: await server.fetchTimebounds(100)
+              });
+
+              layers.forEach(l => {
+                mintTx.addOperation(StellarSDK.Operation.payment({
+                  destination: distPK,
+                  asset: new StellarSDK.Asset(l.code, issuerPK),
+                  amount: "1000000.0000000"
+                }));
+              });
+
+              mintTx.addOperation(StellarSDK.Operation.setOptions({
+                homeDomain: "ze0ro99.github.io/PiRC"
+              }));
+
+              const sMint = mintTx.build();
+              sMint.sign(issuerKp);
+              await server.submitTransaction(sMint);
+              console.log("✅ Minting complete. Home Domain set.");
+
+              // --- STEP 3: TOML GENERATION (Clean Text) ---
+              let toml = `ACCOUNTS=["${issuerPK}"]\n\n`;
+              layers.forEach(l => {
+                toml += `[[CURRENCIES]]\ncode="${l.code}"\nissuer="${issuerPK}"\ndisplay_decimals=7\nname="PiRC-207 ${l.name}"\ndesc="Official PiRC-207 Asset | Registry: CAEUNHEUXACISTVHICFNISFRTRVSK5IALA3H5MUT7P4JKU5L3IPSKG4B"\nimage="https://ze0ro99.github.io/PiRC/images/${l.code.toLowerCase()}.png"\n\n`;
+              });
+
+              if (!fs.existsSync('.well-known')) fs.mkdirSync('.well-known');
+              fs.writeFileSync('.well-known/pi.toml', toml);
+              console.log("✅ pi.toml successfully generated.");
+
+            } catch (e) {
+              console.error("❌ ERROR DETAILS:");
+              if (e.response && e.response.data) {
+                console.error(JSON.stringify(e.response.data.extras.result_codes, null, 2));
+              } else {
+                console.error(e.message);
+              }
+              process.exit(1);
+            }
+          }
+          run();
+          EOF
+
+      - name: Deploy Professional Metadata
+        run: |
+          git config user.name "PiRC-207 Automator"
+          git config user.email "bot@ze0ro99.github.io"
+          touch .nojekyll
+          git add .
+          git commit -m "Official PiRC-207 Professional Launch" || echo "No changes"
+          git push

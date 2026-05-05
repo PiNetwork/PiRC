@@ -1,0 +1,15 @@
+{
+  "protocol_version": "1.0.1-stable",
+  "asset_pair": "Pi/USD",
+  "settlement_unit": "REF",
+  "parameters": {
+    "qwf_multiplier": 10000000,
+    "phi_guardrail_active": true,
+    "oracle_source": "multi-sig-median"
+  },
+  "endpoints": {
+    "get_ippr": "/v1/market/valuation",
+    "init_settlement": "/v1/vault/mint_ref"
+  }
+}
+

@@ -1,0 +1,20 @@
+name: PiRC Ultimate Sync
+
+on:
+  workflow_dispatch: # This allows you to run it manually with a button click
+
+jobs:
+  sync-contracts:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Required to allow the bot to push changes to your repo
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Make Script Executable
+        run: chmod +x scripts/automation/ultimate_sync.sh
+
+      - name: Run Ultimate Synchronizer
+        run: ./scripts/automation/ultimate_sync.sh

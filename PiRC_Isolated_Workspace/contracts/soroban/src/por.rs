@@ -1,0 +1,18 @@
+mod pirc_config;
+#![forbid(unsafe_code)]
+#![forbid(unsafe_code)]
+#![forbid(unsafe_code)]
+#![forbid(unsafe_code)]
+#![forbid(unsafe_code)]
+use soroban_sdk::{contract, contractimpl, Env, String, U128};
+
+#[contract]
+pub struct PiRC225PoR;
+
+#[contractimpl]
+impl PiRC225PoR {
+    pub fn attest_reserve(env: Env, asset: String, amount: U128) {
+        env.storage().instance().set(&asset, &amount);
+    }
+}
+

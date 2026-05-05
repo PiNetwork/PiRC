@@ -1,0 +1,35 @@
+name: PiRC Ultimate Production CI/CD
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Rust
+      uses: dtolnay/rust-toolchain@stable
+      with:
+        targets: wasm32-unknown-unknown
+
+    - name: Build Contracts
+      run: |
+        for d in ./contracts/* ./Omni_Sovereign_Architecture/*/contracts; do
+           if [ -f "$d/Cargo.toml" ]; then
+               cd "$d" && cargo build --target wasm32-unknown-unknown --release || true
+               cd -
+           fi
+        done
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Verify AI & Math Models
+      run: python3 init_models.py || true

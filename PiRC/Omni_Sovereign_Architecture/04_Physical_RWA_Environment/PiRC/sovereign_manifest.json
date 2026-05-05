@@ -1,0 +1,10 @@
+{
+  "project": "PiRC Sovereign Sync",
+  "version": "1.0.0",
+  "core_contract": "GA3ECRFJ6SO5BW6NEIKW3ACJXNG5UNBTLRRXWC742NHUEDV6KL3RNEN6",
+  "layers": {
+    "yellow": "CANL...SDFF"
+  },
+  "network": "TESTNET",
+  "last_updated": "2026-04-20T00:31:34Z"
+}

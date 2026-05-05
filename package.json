@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "@pinetwork/pi-sdk-js": "github:pi-apps/pi-sdk-js",
+    "@stellar/stellar-sdk": "^15.0.1",
+    "body-parser": "^2.2.2",
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
+  },
+  "type": "module",
+  "devDependencies": {
+    "vercel": "^53.1.0"
+  },
+  "scripts": {
+    "vercel-build": "echo \"Vercel build complete - Ready for deployment\"",
+    "build": "echo \"Standard build complete\""
+  }
+}

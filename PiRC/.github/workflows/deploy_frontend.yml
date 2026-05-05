@@ -1,0 +1,46 @@
+name: 🌐 Deploy PiRC Live Terminal & Auto-Sync
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: write # Required to push changes back to the repository and deploy to gh-pages
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ⚙️ Make Sync Script Executable
+        run: chmod +x scripts/automation/sync_frontend.sh
+
+      - name: 🔄 Run Universal Auto-Sync
+        run: ./scripts/automation/sync_frontend.sh
+
+      - name: 💾 Commit and Push Changes to Main
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          if ! git diff-index --quiet HEAD; then
+            git commit -m "🤖 Auto-Sync: Updated Master Contract ID"
+            git push origin main
+          else
+            echo "No changes to commit."
+          fi
+
+      - name: 🚀 Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: .
+          publish_branch: gh-pages
+          commit_message: "🚀 Deploy Live PiRC Terminal to GitHub Pages"

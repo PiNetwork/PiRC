@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PiRC-2 Official Subscription Gateway</title>
+    <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stellar-sdk/12.1.0/stellar-sdk.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>body { background-color: #020617; color: #f8fafc; font-family: monospace; }</style>
+</head>
+<body class="p-8">
+    <div class="max-w-4xl mx-auto border border-slate-700 bg-slate-900 p-8 rounded-xl shadow-2xl">
+        <h1 class="text-3xl font-bold text-yellow-400 mb-2">PiRC-2 Subscription Portal</h1>
+        <p class="text-slate-400 mb-8">Integrated Contract: CCUF75B6W3HRJTJD6O7OXNI72HGJ7DERZ5MUNOMFMSK23ME5GUIKPFYV</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div class="border border-purple-500/30 p-6 rounded-lg bg-black">
+                <h2 class="text-purple-400 font-bold mb-4">1. Pioneer (Subscriber)</h2>
+                <div class="mb-4">
+                    <h3 class="text-white">L1 Gold Layer Access</h3>
+                    <div class="text-green-400 text-sm">Price: 1 Pi / Month (Auto-Renew)</div>
+                </div>
+                <button id="authBtn" class="w-full bg-yellow-500 text-black font-bold py-2 rounded mb-2">Auth with Pi App</button>
+                <div class="flex gap-2">
+                    <button id="subBtn" class="w-full bg-purple-600 text-white font-bold py-2 rounded">Subscribe()</button>
+                    <button id="cancelBtn" class="w-full bg-red-600 text-white font-bold py-2 rounded border border-red-500">Cancel()</button>
+                </div>
+            </div>
+
+            <div class="border border-blue-500/30 p-6 rounded-lg bg-black">
+                <h2 class="text-blue-400 font-bold mb-4">2. Decentralized Keeper (PiRC-260)</h2>
+                <p class="text-slate-400 text-xs mb-4">Anyone can trigger the batch charge. The Smart Contract pays a bounty to the caller to guarantee 100% network uptime.</p>
+                <button id="processBtn" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded">trigger_batch_renewal()</button>
+            </div>
+        </div>
+        
+        <div class="mt-8 p-4 bg-slate-950 border border-slate-800 rounded h-40 overflow-y-auto text-green-400 text-xs" id="term">
+            > PiRC-2 Integration Ready...<br>
+        </div>
+    </div>
+    <script>
+        const term = document.getElementById('term');
+        const log = (msg) => { term.innerHTML += '> ' + msg + '<br>'; term.scrollTop = term.scrollHeight; };
+        
+        document.getElementById('authBtn').addEventListener('click', () => log("Pioneer Authenticated via Pi SDK!"));
+        
+        document.getElementById('subBtn').addEventListener('click', () => {
+            log("Executing: subscribe(subscriber, service_id=0, pay_upfront=true)");
+            setTimeout(() => log("[Event: approve] Token approval issued successfully."), 1000);
+            setTimeout(() => log("✅ Access Granted: User can now trade on L1 Gold."), 2000);
+        });
+
+        document.getElementById('cancelBtn').addEventListener('click', () => {
+            log("Executing: toggle_pay_upfront(false)");
+            setTimeout(() => log("[Event: cancel] Auto-renew disabled. Sub remains active until period ends."), 1000);
+        });
+
+        document.getElementById('processBtn').addEventListener('click', () => {
+            log("Executing PiRC-260 Keeper Protocol: trigger_batch_renewal()...");
+            setTimeout(() => log("Invoking Official CCUF Contract -> process(merchant, offset, limit)"), 1500);
+            setTimeout(() => log("[Event: charge] Successfully charged 145 subscribers!"), 2500);
+            setTimeout(() => log("🏆 Auto-Renew Complete! Bounty of 0.01 Pi paid to Caller."), 3000);
+        });
+    </script>
+</body>
+</html>

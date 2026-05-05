@@ -1,0 +1,35 @@
+name: 🌐 PiRC v5.1 Adaptive Risk & Governance Engine
+
+on:
+  push:
+    branches: [ "feature/pirc-v5-1-adaptive-engine", "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  execute-sovereign-engine:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Checkout PiRC Repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: ⚙️ Execute PiRC v5.1 Pure-Python Core
+        run: |
+          chmod +x scripts/enhanced/pirc_enhancer_v5_1_ci.py
+          python scripts/enhanced/pirc_enhancer_v5_1_ci.py --value 250000 --velocity 4.2
+
+      - name: 📤 Upload Sovereign Execution Results (Artifacts)
+        uses: actions/upload-artifact@v4
+        with:
+          name: PiRC_V5_1_Execution_Reports
+          path: |
+            intelligent_v5_1_results.json
+            pirc_v5_1_execution.log
+          retention-days: 30

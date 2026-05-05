@@ -1,0 +1,13 @@
+/
+├── README.md                      (Root) Project Executive Summary
+├── LICENSE                        (Root) MIT Open Source License
+├── contracts/                     (Folder) Smart Contract Reference Model
+│   └── PiRC101Vault.sol           (Hardened Solidity Reference Model)
+├── simulator/                     (Folder) Dynamic Simulation Environment
+│   ├── stochastic_abm_simulator.py (Hardened Python ABM Simulator)
+│   ├── index.html                (Hardened Interactive HTML Visualizer)
+│   └── pirc101_simulation_chart.png (Placeholder image for your chart)
+└── docs/                          (Folder) Normative Specifications
+    ├── PiRC101_Whitepaper.md     (Normative Specification, Track A/B)
+    └── dev-guide/                 (Folder) Integration Guides
+        └── integration.md         (Integration Guidelines, Track D/E)
