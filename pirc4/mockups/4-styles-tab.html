@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pi Visual Builder — Styles Tab</title>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+body { background: #1a1a2e; color: #e0e0e0; height: 100vh; height: 100dvh; overflow: hidden; display: flex; flex-direction: column; }
+.topbar { display: flex; align-items: center; background: #16213e; height: 44px; border-bottom: 1px solid #2a2a4a; padding: 0 8px; gap: 2px; flex-shrink: 0; }
+.logo { width: 26px; height: 26px; background: linear-gradient(135deg, #6B46F5, #9F7AEA); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-right: 6px; }
+.logo svg { width: 16px; height: 16px; color: #fff; }
+.app-name { color: #fff; font-size: 12px; font-weight: 600; margin-right: 8px; }
+.tab { display: flex; align-items: center; gap: 3px; padding: 6px 8px; font-size: 10px; color: #888; cursor: pointer; border: none; background: none; border-radius: 4px; }
+.tab svg { width: 12px; height: 12px; }
+.tab.active { color: #fff; background: #6B46F5; }
+.topbar-right { margin-left: auto; }
+.btn-sm { display: flex; align-items: center; gap: 3px; background: #48BB78; color: #fff; border: none; padding: 4px 8px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: 600; }
+.btn-sm svg { width: 11px; height: 11px; }
+
+.content-area { flex: 1; overflow-y: auto; padding: 12px; }
+.section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.section-title { font-size: 14px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 4px; }
+.section-title svg { width: 16px; height: 16px; }
+.add-btn { display: flex; align-items: center; gap: 3px; background: #6B46F5; color: #fff; border: none; padding: 4px 10px; border-radius: 4px; font-size: 10px; cursor: pointer; font-weight: 600; }
+.add-btn svg { width: 10px; height: 10px; }
+
+/* Style Variables */
+.var-section { margin-bottom: 16px; }
+.var-title { font-size: 11px; text-transform: uppercase; color: #888; margin-bottom: 8px; letter-spacing: 1px; display: flex; align-items: center; gap: 3px; }
+.var-title svg { width: 12px; height: 12px; }
+.var-card { background: #16213e; border: 1px solid #2a2a4a; border-radius: 8px; padding: 10px; margin-bottom: 6px; }
+.var-top { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.var-name { font-size: 12px; font-weight: 600; color: #fff; flex: 1; display: flex; align-items: center; gap: 3px; }
+.var-name svg { width: 12px; height: 12px; color: #888; }
+.var-value-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.var-swatch { width: 28px; height: 28px; border-radius: 6px; border: 2px solid #3a3a5a; cursor: pointer; flex-shrink: 0; }
+.var-input { flex: 1; background: #2a2a4a; border: 1px solid #3a3a5a; color: #fff; padding: 3px 6px; border-radius: 3px; font-size: 10px; font-family: monospace; }
+.var-used { font-size: 9px; color: #888; margin-top: 4px; display: flex; align-items: center; gap: 2px; }
+.var-used svg { width: 9px; height: 9px; }
+
+/* Font Variables */
+.font-preview { font-size: 16px; color: #e0e0e0; margin-top: 4px; padding: 4px 0; border-bottom: 1px solid #2a2a4a; }
+
+/* Element Styles */
+.style-card { background: #16213e; border: 1px solid #2a2a4a; border-radius: 8px; padding: 10px; margin-bottom: 6px; }
+.style-top { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.style-name { font-size: 12px; font-weight: 600; color: #fff; flex: 1; display: flex; align-items: center; gap: 3px; }
+.style-name svg { width: 12px; height: 12px; color: #6B46F5; }
+.style-base { font-size: 9px; color: #888; background: #2a2a4a; padding: 2px 6px; border-radius: 3px; }
+.style-props { display: flex; flex-wrap: wrap; gap: 4px; }
+.style-prop { font-size: 9px; background: #2a2a4a; padding: 2px 6px; border-radius: 3px; display: flex; align-items: center; gap: 2px; }
+.style-prop svg { width: 8px; height: 8px; }
+.style-prop .color-dot { width: 8px; height: 8px; border-radius: 2px; }
+
+/* Preview */
+.preview-section { margin-top: 16px; }
+.preview-card { background: #fff; border-radius: 8px; padding: 12px; }
+.preview-h1 { font-size: 18px; font-weight: 600; color: #1a1a2e; margin-bottom: 4px; }
+.preview-body { font-size: 12px; color: #555; margin-bottom: 8px; }
+.preview-btn { display: inline-flex; align-items: center; gap: 3px; background: #6B46F5; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 600; margin-right: 4px; }
+.preview-btn svg { width: 11px; height: 11px; }
+.preview-btn.outline { background: none; border: 1.5px solid #6B46F5; color: #6B46F5; }
+.preview-badge { display: inline-flex; align-items: center; gap: 2px; background: #FFD700; color: #333; font-size: 9px; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+.preview-badge svg { width: 8px; height: 8px; }
+
+/* AI FAB */
+.ai-fab { position: fixed; bottom: 12px; right: 12px; width: 40px; height: 40px; background: linear-gradient(135deg, #6B46F5, #9F7AEA); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(107,70,245,0.4); cursor: pointer; z-index: 100; }
+.ai-fab svg { width: 18px; height: 18px; color: #fff; }
+.ai-panel { position: fixed; bottom: 0; left: 0; right: 0; background: #16213e; border-top: 1px solid #2a2a4a; border-radius: 10px 10px 0 0; z-index: 99; max-height: 45vh; display: none; flex-direction: column; }
+.ai-panel.open { display: flex; }
+.ai-header { display: flex; align-items: center; padding: 6px 10px; gap: 4px; border-bottom: 1px solid #2a2a4a; }
+.ai-avatar { width: 18px; height: 18px; background: linear-gradient(135deg, #6B46F5, #9F7AEA); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+.ai-avatar svg { width: 10px; height: 10px; color: #fff; }
+.ai-name { font-size: 10px; font-weight: 600; color: #fff; }
+.ai-close { margin-left: auto; background: none; border: none; color: #888; cursor: pointer; display: flex; }
+.ai-close svg { width: 14px; height: 14px; }
+.ai-messages { flex: 1; padding: 6px 10px; overflow-y: auto; }
+.ai-msg { font-size: 9px; margin-bottom: 3px; line-height: 1.4; }
+.ai-msg.bot { color: #9F7AEA; }
+.ai-msg.user { color: #48BB78; text-align: right; }
+.ai-input-row { display: flex; padding: 6px 10px; gap: 4px; }
+.ai-input { flex: 1; background: #2a2a4a; border: 1px solid #3a3a5a; color: #fff; padding: 5px 7px; border-radius: 5px; font-size: 10px; }
+.ai-send { background: #6B46F5; color: #fff; border: none; padding: 5px 8px; border-radius: 5px; font-size: 10px; cursor: pointer; display: flex; align-items: center; }
+.ai-send svg { width: 12px; height: 12px; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo"><i data-lucide="pi"></i></div>
+  <span class="app-name">Pi Coffee ▾</span>
+  <button class="tab"><i data-lucide="palette"></i></button>
+  <button class="tab"><i data-lucide="zap"></i></button>
+  <button class="tab"><i data-lucide="database"></i></button>
+  <button class="tab active"><i data-lucide="paintbrush"></i></button>
+  <button class="tab"><i data-lucide="puzzle"></i></button>
+  <div class="topbar-right">
+    <button class="btn-sm"><i data-lucide="play"></i> Run</button>
+  </div>
+</div>
+
+<div class="content-area">
+  <div class="section-header">
+    <div class="section-title"><i data-lucide="paintbrush"></i> Style Variables</div>
+    <button class="add-btn"><i data-lucide="plus"></i> Variable</button>
+  </div>
+
+  <!-- Color Variables -->
+  <div class="var-section">
+    <div class="var-title"><i data-lucide="palette"></i> Colors</div>
+    <div class="var-card">
+      <div class="var-top">
+        <span class="var-name"><i data-lucide="droplets"></i> pi-primary</span>
+      </div>
+      <div class="var-value-row">
+        <div class="var-swatch" style="background:#6B46F5"></div>
+        <input class="var-input" value="#6B46F5">
+      </div>
+      <div class="var-used"><i data-lucide="mouse-pointer-click"></i> Used by: Buttons, Links, Active tabs</div>
+    </div>
+    <div class="var-card">
+      <div class="var-top">
+        <span class="var-name"><i data-lucide="droplets"></i> pi-success</span>
+      </div>
+      <div class="var-value-row">
+        <div class="var-swatch" style="background:#48BB78"></div>
+        <input class="var-input" value="#48BB78">
+      </div>
+      <div class="var-used"><i data-lucide="mouse-pointer-click"></i> Used by: Confirmations, Verified badges</div>
+    </div>
+    <div class="var-card">
+      <div class="var-top">
+        <span class="var-name"><i data-lucide="droplets"></i> pi-error</span>
+      </div>
+      <div class="var-value-row">
+        <div class="var-swatch" style="background:#F56565"></div>
+        <input class="var-input" value="#F56565">
+      </div>
+      <div class="var-used"><i data-lucide="mouse-pointer-click"></i> Used by: Errors, Disputes, Alerts</div>
+    </div>
+    <div class="var-card">
+      <div class="var-top">
+        <span class="var-name"><i data-lucide="droplets"></i> pi-warning</span>
+      </div>
+      <div class="var-value-row">
+        <div class="var-swatch" style="background:#F6AD55"></div>
+        <input class="var-input" value="#F6AD55">
+      </div>
+      <div class="var-used"><i data-lucide="mouse-pointer-click"></i> Used by: PiDCTP links, Warnings</div>
+    </div>
+    <div class="var-card">
+      <div class="var-top">
+        <span class="var-name"><i data-lucide="droplets"></i> pi-bg</span>
+      </div>
+      <div class="var-value-row">
+        <div class="var-swatch" style="background:#FFFFFF"></div>
+        <input class="var-input" value="#FFFFFF">
+      </div>
+      <div class="var-used"><i data-lucide="mouse-pointer-click"></i> Used by: Page backgrounds, Cards</div>
+    </div>
+  </div>
+
+  <!-- Font Variables -->
+  <div class="var-section">
+    <div class="var-title"><i data-lucide="type"></i> Fonts</div>
+    <div class="var-card">
+      <div class="var-top">
+        <span class="var-name"><i data-lucide="heading-1"></i> pi-heading</span>
+      </div>
+      <div class="var-value-row">
+        <input class="var-input" value="24px / 600 / -apple-system">
+      </div>
+      <div class="font-preview" style="font-size:18px;font-weight:600">Pi Coffee Shop</div>
+      <div class="var-used"><i data-lucide="mouse-pointer-click"></i> Used by: Page titles, Hero text</div>
+    </div>
+    <div class="var-card">
+      <div class="var-top">
+        <span class="var-name"><i data-lucide="type"></i> pi-body</span>
+      </div>
+      <div class="var-value-row">
+        <input class="var-input" value="14px / 400 / -apple-system">
+      </div>
+      <div class="font-preview" style="font-size:12px">Fresh roasted, Pi-powered coffee</div>
+      <div class="var-used"><i data-lucide="mouse-pointer-click"></i> Used by: Body text, Descriptions</div>
+    </div>
+    <div class="var-card">
+      <div class="var-top">
+        <span class="var-name"><i data-lucide="type"></i> pi-caption</span>
+      </div>
+      <div class="var-value-row">
+        <input class="var-input" value="12px / 400 / -apple-system">
+      </div>
+      <div class="font-preview" style="font-size:10px;color:#888">5 Pi per bag · Escrow protected</div>
+      <div class="var-used"><i data-lucide="mouse-pointer-click"></i> Used by: Labels, Hints, Captions</div>
+    </div>
+  </div>
+
+  <!-- Element Styles -->
+  <div class="var-section">
+    <div class="section-header" style="margin-bottom:8px">
+      <div class="var-title" style="margin:0"><i data-lucide="component"></i> Element Styles</div>
+      <button class="add-btn"><i data-lucide="plus"></i> Style</button>
+    </div>
+    <div class="style-card">
+      <div class="style-top">
+        <span class="style-name"><i data-lucide="mouse-pointer-click"></i> Button-primary</span>
+        <span class="style-base">base: button</span>
+      </div>
+      <div class="style-props">
+        <span class="style-prop"><span class="color-dot" style="background:#6B46F5"></span> pi-primary</span>
+        <span class="style-prop"><i data-lucide="type"></i> 14px/600</span>
+        <span class="style-prop"><i data-lucide="square"></i> 8px radius</span>
+        <span class="style-prop"><i data-lucide="move-vertical"></i> 8px 16px</span>
+      </div>
+    </div>
+    <div class="style-card">
+      <div class="style-top">
+        <span class="style-name"><i data-lucide="mouse-pointer-click"></i> Button-outline</span>
+        <span class="style-base">base: button</span>
+      </div>
+      <div class="style-props">
+        <span class="style-prop"><span class="color-dot" style="background:transparent;border:1px solid #6B46F5"></span> pi-primary border</span>
+        <span class="style-prop"><i data-lucide="type"></i> 14px/600</span>
+        <span class="style-prop"><i data-lucide="square"></i> 8px radius</span>
+      </div>
+    </div>
+    <div class="style-card">
+      <div class="style-top">
+        <span class="style-name"><i data-lucide="box"></i> Card-default</span>
+        <span class="style-base">base: group</span>
+      </div>
+      <div class="style-props">
+        <span class="style-prop"><span class="color-dot" style="background:#f7f7fc"></span> #f7f7fc</span>
+        <span class="style-prop"><i data-lucide="square"></i> 10px radius</span>
+        <span class="style-prop"><i data-lucide="move-vertical"></i> 10px</span>
+        <span class="style-prop"><i data-lucide="cloud"></i> shadow-sm</span>
+      </div>
+    </div>
+    <div class="style-card">
+      <div class="style-top">
+        <span class="style-name"><i data-lucide="award"></i> Badge-gold</span>
+        <span class="style-base">base: text</span>
+      </div>
+      <div class="style-props">
+        <span class="style-prop"><span class="color-dot" style="background:#FFD700"></span> #FFD700</span>
+        <span class="style-prop"><i data-lucide="type"></i> 9px/600</span>
+        <span class="style-prop"><i data-lucide="square"></i> 4px radius</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Preview -->
+  <div class="preview-section">
+    <div class="var-title"><i data-lucide="eye"></i> Live Preview</div>
+    <div class="preview-card">
+      <div class="preview-h1">Pi Coffee Shop</div>
+      <div class="preview-body">Fresh roasted, Pi-powered coffee with escrow protection.</div>
+      <button class="preview-btn"><i data-lucide="shield-check"></i> Order with Escrow</button>
+      <button class="preview-btn outline"><i data-lucide="heart"></i> Favorite</button>
+      <br><br>
+      <span class="preview-badge"><i data-lucide="star"></i> Gold Seller</span>
+      <span class="preview-badge" style="background:#C0C0C0"><i data-lucide="award"></i> Silver</span>
+    </div>
+  </div>
+</div>
+
+<div class="ai-fab" onclick="document.querySelector('.ai-panel').classList.toggle('open')"><i data-lucide="sparkles"></i></div>
+<div class="ai-panel">
+  <div class="ai-header">
+    <div class="ai-avatar"><i data-lucide="sparkles"></i></div>
+    <span class="ai-name">Pi AI</span>
+    <button class="ai-close" onclick="document.querySelector('.ai-panel').classList.remove('open')"><i data-lucide="x"></i></button>
+  </div>
+  <div class="ai-messages">
+    <div class="ai-msg user">"Generate a dark theme for my app"</div>
+    <div class="ai-msg bot">✅ Created dark theme variables<br>✅ pi-bg → #1a1a2e, pi-text → #e0e0e0<br>✅ Updated Card-default to dark surface<br>✅ Preview updated — Apply changes?</div>
+  </div>
+  <div class="ai-input-row">
+    <input class="ai-input" placeholder="Ask Pi AI...">
+    <button class="ai-send"><i data-lucide="send"></i></button>
+  </div>
+</div>
+
+<script>lucide.createIcons();</script>
+</body>
+</html>
