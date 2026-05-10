@@ -1,0 +1,14 @@
+[workspace]
+members = [
+    "contracts/shared",
+    "contracts/escrow",
+    "contracts/reputation",
+    "contracts/dispute",
+    "contracts/merchant",
+    "contracts/loyalty",
+    "contracts/coordinator",
+]
+resolver = "2"
+
+[workspace.dependencies]
+soroban-sdk = "22.0.0"

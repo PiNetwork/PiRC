@@ -1,0 +1,20 @@
+# Rust
+target/
+**/*.rs.bk
+*.swp
+*.swo
+
+# Cargo
+Cargo.lock
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Soroban
+.soroban/
