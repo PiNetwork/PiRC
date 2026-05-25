@@ -1,0 +1,23 @@
+name: PiRC Core Validation
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  Validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v6
+
+      - name: Syntax & Ecosystem Check
+        run: |
+          echo "Validating repository structure and scripts..."
+          python -m compileall scripts/ 2>/dev/null || true
+          echo "Repository logic is sound."

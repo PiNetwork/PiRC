@@ -1,0 +1,50 @@
+version: 2
+updates:
+  # 1. Rust Ecosystem (Cargo) - Critical for Justice Engine Core
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    open-pull-requests-limit: 10
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+    # Automatically labels PRs for easy auditing
+    labels:
+      - "security"
+      - "rust-core"
+
+  # 2. Node.js Ecosystem (NPM) - Critical for SDKs and Frontend
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    # Professional feature: Automatically rebase and update PRs
+    rebase-strategy: "auto"
+    groups:
+      web-dependencies:
+        patterns:
+          - "*"
+
+  # 3. Python Ecosystem (Pip) - For Math Validators and AI Tools
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    labels:
+      - "python-ai"
+
+  # 4. GitHub Actions - Keep your CI/CD Orchestrator secure
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "ci-cd-infra"
+
+  # 5. Docker (If you use containers for Justice Engine nodes)
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"

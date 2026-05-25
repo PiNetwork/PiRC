@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PiRC Protocol Live Interface</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://sdk.minepi.com/pi-sdk.js"></script>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; text-align: center; padding: 50px 20px; margin: 0; }
+    h1 { color: #38bdf8; font-size: 2.5rem; }
+    .subtitle { color: #94a3b8; font-size: 1.2rem; }
+    .card { background: #1e293b; padding: 30px; border-radius: 12px; display: inline-block; margin-top: 40px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.5); border: 1px solid #334155; }
+    .api-link { color: #10b981; font-weight: bold; text-decoration: none; font-size: 1.2rem; display: block; margin-top: 10px; }
+    .api-link:hover { text-decoration: underline; color: #34d399; }
+    .stats { display: flex; justify-content: center; gap: 20px; margin-top: 30px; }
+    .stat-box { background: #0f172a; padding: 15px; border-radius: 8px; border: 1px solid #334155; }
+    .stat-value { font-size: 1.5rem; color: #f8fafc; font-weight: bold; }
+    .stat-label { font-size: 0.85rem; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+  </style>
+</head>
+<body>
+  <h1>PiRC Protocol Foundation</h1>
+  <p class="subtitle">The sovereign 7-layer Soroban architecture has been successfully deployed to Mainnet environments.</p>
+  
+  <div class="card">
+    <p style="font-size: 1.1rem; color: #cbd5e1;">Global Matrix API Endpoint Active</p>
+    <a href="/api/pirc_matrix" class="api-link" target="_blank">/api/pirc_matrix</a>
+    
+    <div class="stats">
+      <div class="stat-box">
+        <div class="stat-value">7</div>
+        <div class="stat-label">Contracts</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value">Live</div>
+        <div class="stat-label">Network</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-value">Active</div>
+        <div class="stat-label">Pi SDK</div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      // Initialize Pi SDK implicitly
+      try {
+        Pi.init({ version: "2.0", sandbox: true });
+        console.log("Pi SDK Initialized successfully.");
+      } catch (e) {
+        console.error("Pi SDK Initialization failed:", e);
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+
+version: '3'
+
+services:
+  pirc-node:
+    image: python:3.11
+    container_name: pirc-node
+    working_dir: /workspace
+    volumes:
+      - ./:/workspace
+    command: tail -f /dev/null

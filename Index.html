@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexusHub OS | Ultimate Full-Stack Orchestrator</title>
+    
+    <!-- Next-Gen Architecture CDNs -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
+    <!-- Prism Syntax Highlighting Engine -->
+    <link href="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-python.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-go.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cyberBg: '#030712',
+                        panelBg: '#0b1329',
+                        accentNeon: '#00f2fe',
+                        accentGreen: '#10b981',
+                        borderHex: '#1e293b'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        [x-cloak] { display: none !important; }
+        body { background-color: #030712; color: #f3f4f6; font-family: system-ui, -apple-system, sans-serif; }
+        .neon-glow { box-shadow: 0 0 20px rgba(0, 242, 254, 0.15); border-color: rgba(0, 242, 254, 0.4); }
+        .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #0b1329; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background: #00f2fe; }
+        pre, code { font-family: 'Fira Code', 'Courier New', Courier, monospace !important; }
+    </style>
+</head>
+<body x-data="nexusEngine()" x-init="initEngine()">
+
+    <!-- Matrix Glow Background Grid -->
+    <div class="fixed inset-0 -z-10 opacity-5 pointer-events-none">
+        <div class="absolute inset-0 bg-[linear-gradient(to_right,#808080_1px,transparent_1px),linear-gradient(to_bottom,#808080_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+    </div>
+
+    <!-- Header Control Bar -->
+    <header class="border-b border-borderHex bg-panelBg/80 backdrop-blur-md sticky top-0 z-50 px-6 py-4">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-4">
+                <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center font-black text-black shadow-lg shadow-cyan-500/20">Ω</div>
+                <div>
+                    <h1 class="text-xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-200 to-accentNeon">NEXUS_HUB // CORE</h1>
+                    <p class="text-xs text-slate-400 tracking-widest uppercase">Self-Assembling Enterprise System</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-6 text-xs tracking-mono">
+                <div class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-accentGreen animate-ping"></span>
+                    <span class="text-slate-300 font-bold">ORCHESTRATOR STATUS: INTEL-ACTIVE</span>
+                </div>
+                <div class="bg-black/40 px-3 py-1.5 rounded-md border border-borderHex text-accentNeon" x-text="'SYS_TIME: ' + systemTime"></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Matrix -->
+    <main class="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
+
+        <!-- ROW 1: Auto-Build System & File Ecosystem Explorer -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Intelligent Terminal Assembly Engine -->
+            <div class="lg:col-span-2 bg-panelBg border border-borderHex rounded-xl p-5 shadow-2xl relative overflow-hidden">
+                <div class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-accentNeon to-transparent"></div>
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                        <span class="inline-block w-2 h-2 rounded bg-accentNeon"></span> Automated Compilation & Pipeline Streams
+                    </h2>
+                    <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded border border-borderHex">STDOUT</span>
+                </div>
+                
+                <div id="terminal" class="bg-black/70 border border-borderHex p-4 rounded-lg h-64 overflow-y-auto custom-scroll text-xs text-emerald-400 space-y-1.5">
+                    <!-- Dynamic logs injected here -->
+                </div>
+            </div>
+
+            <!-- Repository Structure Mapping Matrix -->
+            <div class="bg-panelBg border border-borderHex rounded-xl p-5 flex flex-col">
+                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-300 mb-4 flex items-center gap-2">
+                    <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"></path></svg>
+                    Repository Map Explorer
+                </h2>
+                
+                <div class="flex-1 bg-black/40 border border-borderHex rounded-lg p-3 text-xs custom-scroll max-h-64 overflow-y-auto">
+                    <template x-for="(nodes, folder) in repoTree">
+                        <div class="mb-2">
+                            <div class="font-bold text-accentNeon flex items-center gap-1">📁 <span x-text="folder"></span>/</div>
+                            <div class="pl-4 border-l border-slate-800 ml-1.5 space-y-1 mt-1">
+                                <template x-for="file in nodes">
+                                    <div class="text-slate-400 hover:text-white cursor-pointer transition flex items-center gap-1.5" @click="inspectFile(folder, file)">
+                                        <span>📄</span> <span x-text="file"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROW 2: Cross-Origin Service Mesh Tracker (Backend & 3 Frontends) -->
+        <section class="bg-panelBg border border-borderHex rounded-xl p-6">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-300 mb-6 flex items-center gap-2">
+                <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 009 11V7a4 4 0 00-8 0v4c0 2.508.468 4.914 1.321 7.14M12 11c0-3.517 1.009-6.799 2.753-9.571m3.44 2.04l-.054.09A13.916 13.916 0 0015 11v4a4 4 0 008 0v-4c0-2.508-.468-4.914-1.321-7.14M12 11v12"></path></svg>
+                Full-Stack Integration Topography Network
+            </h2>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Service Node Template -->
+                <template x-for="(srv, name) in microservices">
+                    <div class="bg-black/30 border border-borderHex rounded-xl p-4 flex flex-col justify-between items-start relative group hover:border-slate-700 transition">
+                        <div class="w-full flex justify-between items-center mb-2">
+                            <span class="text-xs font-mono text-slate-500 uppercase" x-text="srv.type"></span>
+                            <span :class="srv.status === 'ONLINE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'" 
+                                  class="text-[10px] px-2 py-0.5 rounded-full border font-bold" x-text="srv.status"></span>
+                        </div>
+                        <h3 class="text-base font-bold text-white mb-1" x-text="name"></h3>
+                        <p class="text-xs text-slate-400 font-mono" x-text="'Port: ' + srv.port + ' -> ' + srv.latency + 'ms'"></p>
+                    </div>
+                </template>
+            </div>
+        </section>
+
+        <!-- ROW 3: Intelligent Universal API Client & Cross-Platform Code Engine -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Sandbox API Controller -->
+            <div class="lg:col-span-2 bg-panelBg border border-borderHex rounded-xl p-6 flex flex-col justify-between">
+                <div>
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-300 mb-4 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        Universal Reactive API Workspace
+                    </h2>
+                    
+                    <div class="flex flex-col sm:flex-row gap-3 mb-4">
+                        <select x-model="apiConfig.method" class="bg-black border border-borderHex px-3 py-2 rounded-lg text-sm font-bold text-center focus:outline-none focus:border-accentNeon">
+                            <option>GET</option><option>POST</option><option>PUT</option><option>DELETE</option>
+                        </select>
+                        <input type="text" x-model="apiConfig.url" class="flex-1 bg-black border border-borderHex px-4 py-2 rounded-lg text-sm font-mono text-left focus:outline-none focus:border-accentNeon" placeholder="Endpoint Gateway Address">
+                        <button @click="firePayload()" :disabled="processingRequest" class="bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 disabled:opacity-50 text-black font-black px-6 py-2 rounded-lg text-sm uppercase tracking-wider transition shadow-md">
+                            <span x-text="processingRequest ? 'Pinging...' : 'Execute'"></span>
+                        </button>
+                    </div>
+
+                    <!-- Dynamic Payload Editor System -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-400 mb-1">HTTP Global Headers</label>
+                            <textarea x-model="apiConfig.headers" rows="4" class="w-full bg-black border border-borderHex p-2.5 rounded-lg text-xs font-mono custom-scroll focus:outline-none focus:border-accentNeon" placeholder='{"Authorization": "Bearer token"}'></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-slate-400 mb-1">JSON Raw Body Payloads</label>
+                            <textarea x-model="apiConfig.body" rows="4" class="w-full bg-black border border-borderHex p-2.5 rounded-lg text-xs font-mono custom-scroll focus:outline-none focus:border-accentNeon" placeholder='{"queries": "params"}'></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Response Stream Capture -->
+                <div class="mt-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-xs font-bold uppercase text-slate-400 tracking-wider">Intercepted Network Payload Data</span>
+                        <div class="text-xs font-mono text-slate-500" x-show="apiResponse.status">
+                            Status: <span :class="apiResponse.status >= 400 ? 'text-red-400' : 'text-emerald-400'" x-text="apiResponse.status"></span>
+                        </div>
+                    </div>
+                    <pre class="bg-black/80 border border-borderHex p-4 rounded-lg text-xs max-h-60 overflow-y-auto custom-scroll"><code class="language-json" x-html="highlightedResponse || '// Execute query to capture payload output...'"></code></pre>
+                </div>
+            </div>
+
+            <!-- Multi-Language Programmatic Exporter Matrix -->
+            <div class="bg-panelBg border border-borderHex rounded-xl p-6 flex flex-col justify-between">
+                <div>
+                    <h2 class="text-sm font-bold uppercase tracking-wider text-slate-300 mb-2 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        Cross-Language Synthesis
+                    </h2>
+                    <p class="text-xs text-slate-400 mb-4">Real-time script synchronization for backend microservices and native targets.</p>
+                    
+                    <!-- Language Selection Interface Matrix -->
+                    <div class="flex gap-1 bg-black/40 p-1 rounded-lg border border-borderHex mb-3 overflow-x-auto custom-scroll">
+                        <template x-for="lang in ['python', 'javascript', 'golang', 'curl']">
+                            <button @click="activeLanguage = lang" 
+                                    :class="activeLanguage === lang ? 'bg-gradient-to-r from-blue-600/20 to-cyan-500/20 text-accentNeon border-cyan-500/30' : 'text-slate-400 border-transparent'"
+                                    class="flex-1 text-center py-1 rounded text-xs font-mono uppercase tracking-wider border transition" x-text="lang"></button>
+                        </template>
+                    </div>
+
+                    <pre class="bg-black/90 border border-borderHex p-3 rounded-lg text-xs h-64 overflow-y-auto custom-scroll"><code :class="'language-' + activeLanguage" x-html="renderLanguageSnippet()"></code></pre>
+                </div>
+
+                <button @click="copySnippet()" class="w-full mt-4 bg-slate-800 hover:bg-slate-700 text-slate-200 py-2 rounded-lg text-xs font-bold uppercase tracking-wider border border-borderHex transition flex items-center justify-center gap-2">
+                    📄 Copy Automation Code
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Global Toast Alert Mesh -->
+    <div x-show="toast.active" x-cloak x-transition class="fixed bottom-6 right-6 bg-accentNeon text-black font-black px-6 py-3 rounded-xl shadow-2xl z-[9999] tracking-wide text-xs uppercase" x-text="toast.msg"></div>
+
+    <!-- Core Automation Engine Controller -->
+    <script>
+        function nexusEngine() {
+            return {
+                systemTime: '',
+                processingRequest: false,
+                activeLanguage: 'python',
+                highlightedResponse: '',
+                
+                toast: { active: false, msg: '' },
+                
+                apiConfig: {
+                    method: 'GET',
+                    url: 'https://jsonplaceholder.typicode.com/posts/1',
+                    headers: '{\n  "Content-Type": "application/json"\n}',
+                    body: '{\n  "status": "synchronized"\n}'
+                },
+                
+                apiResponse: { status: null, body: null },
+                
+                repoTree: {
+                    'backend_api': ['server.go', 'router.go', 'Dockerfile', 'go.mod'],
+                    'frontend_web_react': ['App.jsx', 'index.css', 'package.json', 'vite.config.js'],
+                    'frontend_admin_dashboard': ['dashboard.ts', 'admin.component.html', 'angular.json'],
+                    'frontend_mobile_native': ['App.tsx', 'app.json', 'package.json']
+                },
+                
+                microservices: {
+                    'Golang Micro-API': { type: 'Backend Core', port: 8080, latency: 12, status: 'ONLINE' },
+                    'React SPA Hub': { type: 'Frontend Client 1', port: 3000, latency: 24, status: 'ONLINE' },
+                    'Angular Enterprise': { type: 'Frontend Client 2', port: 4200, latency: 45, status: 'ONLINE' },
+                    'React Native Portal': { type: 'Frontend Client 3', port: 8081, latency: 110, status: 'DEGRADED' }
+                },
+
+                initEngine() {
+                    setInterval(() => { this.systemTime = new Date().toLocaleTimeString(); }, 1000);
+                    this.$watch('apiConfig', () => this.renderLanguageSnippet(), { deep: true });
+                },
+
+                triggerAlert(message) {
+                    this.toast.msg = message; this.toast.active = true;
+                    setTimeout(() => this.toast.active = false, 3500);
+                },
+
+                bootSystem() {
+                    const terminal = document.getElementById('terminal');
+                    const routines = [
+                        "Initializing Nexus Engine pipeline architecture...",
+                        "Analyzing continuous deployment code tokens...",
+                        "Mapping repository structures and parsing nested directories...",
+                        "Syncing cross-origin dependencies for 3 frontends & 1 API matrix...",
+                        "Injected global Axios runtime client successfully.",
+                        "System structural integrity verifications: 100% stable."
+                    ];
+                    
+                    routines.forEach((line, index) => {
+                        setTimeout(() => {
+                            const node = document.createElement('p');
+                            node.innerHTML = `<span class="text-cyan-400 font-bold">>>></span> [OK] ${line}`;
+                            terminal.appendChild(node);
+                            terminal.scrollTop = terminal.scrollHeight;
+                        }, (index + 1) * 600);
+                    });
+                },
+
+                inspectFile(folder, file) {
+                    this.triggerAlert(`Inspecting structural mapping: ${folder}/${file}`);
+                    const node = document.createElement('p');
+                    node.innerHTML = `<span class="text-yellow-400 font-bold">>>></span> [FS_MAP] Inspected internal schema node of ${file}`;
+                    const terminal = document.getElementById('terminal');
+                    terminal.appendChild(node);
+                    terminal.scrollTop = terminal.scrollHeight;
+                },
+
+                async firePayload() {
+                    this.processingRequest = true;
+                    this.apiResponse.status = null;
+                    
+                    let parsedHeaders = {};
+                    let parsedBody = null;
+
+                    try {
+                        if(this.apiConfig.headers.trim()) parsedHeaders = JSON.parse(this.apiConfig.headers);
+                        if(['POST', 'PUT', 'DELETE'].includes(this.apiConfig.method) && this.apiConfig.body.trim()) {
+                            parsedBody = JSON.parse(this.apiConfig.body);
+                        }
+                    } catch(err) {
+                        this.triggerAlert("JSON compilation validation failed.");
+                        this.processingRequest = false;
+                        return;
+                    }
+
+                    try {
+                        const res = await axios({
+                            method: this.apiConfig.method,
+                            url: this.apiConfig.url,
+                            headers: parsedHeaders,
+                            data: parsedBody,
+                            timeout: 8000
+                        });
+                        this.apiResponse.status = res.status;
+                        const stringified = JSON.stringify(res.data, null, 2);
+                        this.highlightedResponse = Prism.highlight(stringified, Prism.languages.json, 'json');
+                    } catch(error) {
+                        this.apiResponse.status = error.response ? error.response.status : 'X_ERR';
+                        const errPayload = JSON.stringify({ network_error: error.message }, null, 2);
+                        this.highlightedResponse = Prism.highlight(errPayload, Prism.languages.json, 'json');
+                    } finally {
+                        this.processingRequest = false;
+                    }
+                },
+
+                renderLanguageSnippet() {
+                    const method = this.apiConfig.method;
+                    const endpoint = this.apiConfig.url || 'https://api.gateway.internal';
+                    
+                    const codeBlocks = {
+                        python: `import requests\nimport json\n\nurl = "${endpoint}"\npayload = ${this.apiConfig.body.trim() ? this.apiConfig.body.replace(/\n/g, '') : '{}'}\nheaders = ${this.apiConfig.headers.trim() ? this.apiConfig.headers.replace(/\n/g, '') : '{}'}\n\nresponse = requests.request("${method}", url, headers=headers, json=payload)\nprint(response.status_code)\nprint(response.json())`,
+                        
+                        javascript: `const url = "${endpoint}";\nconst payload = ${this.apiConfig.body.trim() ? this.apiConfig.body.replace(/\n/g, '') : '{}'};\nconst headers = ${this.apiConfig.headers.trim() ? this.apiConfig.headers.replace(/\n/g, '') : '{}'};\n\ntry {\n  const res = await fetch(url, {\n    method: "${method}",\n    headers: headers,\n    ${['GET', 'HEAD'].includes(method) ? '' : 'body: JSON.stringify(payload)'}\n  });\n  console.log(res.status);\n} catch(err) { console.error(err); }`,
+                        
+                        golang: `package main\n\nimport (\n\t"fmt"\n\t"net/http"\n)\n\nfunc main() {\n\tclient := &http.Client{}\n\treq, _ := http.NewRequest("${method}", "${endpoint}", nil)\n\t\n\tres, err := client.Do(req)\n\tif err != nil { fmt.Println(err) }\n\tfmt.Println(res.StatusCode)\n}`,
+                        
+                        curl: `curl --location --request ${method} '${endpoint}' \\\n--header 'Content-Type: application/json'`
+                    };
+
+                    const rawCode = codeBlocks[this.activeLanguage] || '';
+                    const grammar = this.activeLanguage === 'golang' ? Prism.languages.go : Prism.languages[this.activeLanguage];
+                    return Prism.highlight(rawCode, grammar, this.activeLanguage);
+                },
+
+                copySnippet() {
+                    const method = this.apiConfig.method;
+                    const endpoint = this.apiConfig.url || 'https://api.gateway.internal';
+                    // Fallback to extraction for clean copy operations
+                    const codeMap = {
+                        python: `import requests\nurl = "${endpoint}"\nres = requests.request("${method}", url)\nprint(res.status_code)`,
+                        javascript: `fetch("${endpoint}", { method: "${method}" }).then(r => console.log(r.status));`,
+                        golang: `// Compiled automation matrix module code ready`,
+                        curl: `curl -X ${method} "${endpoint}"`
+                    };
+                    navigator.clipboard.writeText(codeMap[this.activeLanguage]);
+                    this.triggerAlert(`${this.activeLanguage.toUpperCase()} code token copied.`);
+                }
+            }
+        }
+
+        // Run the auto-build stream sequencer upon document rendering
+        document.addEventListener('DOMContentLoaded', () => {
+            const context = Alpine.store('nexusEngine') || document.body.__x.$data;
+            if(context) context.bootSystem();
+        });
+    </script>
+</body>
+</html>
+

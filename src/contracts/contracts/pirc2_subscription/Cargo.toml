@@ -1,0 +1,14 @@
+[package]
+name = "pirc2-subscription"
+version = "1.0.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+soroban-sdk = { version = "20.0.0", features = ["token"] }
+
+[dev_dependencies]
+soroban-sdk = { version = "20.0.0", features = ["testutils"] }
+
+[lib]
+crate-type = ["cdylib"]

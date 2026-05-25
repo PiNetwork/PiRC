@@ -1,0 +1,15 @@
+openapi: 3.0.0
+info:
+  title: PiRC Sovereign OS API
+  version: 1.0.0
+  description: International Banking and Court System Integration
+paths:
+  /api/justice/execute:
+    post:
+      summary: Trigger Divine Justice Distribution
+      responses:
+        '200':
+          description: Successful execution
+  /api/webhooks/status:
+    post:
+      summary: Real-time sync for PiRC-45 events (Divorce/Inheritance)

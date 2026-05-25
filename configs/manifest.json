@@ -1,0 +1,6 @@
+{
+  "project": "PiDEX Sovereign Matrix",
+  "master_core": "GA3ECRFJ6SO5BW6NEIKW3ACJXNG5UNBTLRRXWC742NHUEDV6KL3RNEN6",
+  "capabilities": ["RECEIVE", "PAYMENT", "GENERAL"],
+  "timestamp": "2026-04-16T21:40:09Z"
+}

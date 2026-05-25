@@ -1,0 +1,8 @@
+# Ignore large dataset and recursive directories
+node_modules/
+PiRC_Auto_Workspace/
+.git/
+large_data_dumps/
+coverage/
+# Ignore legacy auto-generated drafts
+scripts/archive_legacy/
