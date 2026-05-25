@@ -21,8 +21,8 @@ reward_hist = np.random.normal(0.2, 0.1, epochs)
 # STYLE (clean publication)
 # =========================
 plt.rcParams.update({
-    "figure.figsize": (8, 5),
-    "font.size": 10,
+"figure.figsize": (8, 5),
+"font.size": 10,
 })
 
 # =========================

@@ -1,19 +1,14 @@
 {
-  "cleanUrls": true,
-  "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
-    }
+  "version": 2,
+  "builds": [
+    { "src": "package.json", "use": "@vercel/static-build" }
   ],
-  "headers": [
-    {
-      "source": "/api/(.*)",
-      "headers": [
-        { "key": "Access-Control-Allow-Credentials", "value": "true" },
-        { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT" }
-      ]
+  "routes": [
+    { "src": "/(.*)", "dest": "/" }
+  ],
+  "features": {
+    "functions": {
+      "experimentalQuantumHooks": true
     }
-  ]
+  }
 }

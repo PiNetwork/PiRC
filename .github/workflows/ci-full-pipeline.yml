@@ -13,7 +13,7 @@ jobs:
     steps:
       # 1. Checkout
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       # 2. Setup Rust (FIXED)
       - name: Setup Rust
@@ -23,7 +23,7 @@ jobs:
 
       # 3. Cache Cargo (biar cepat & stabil)
       - name: Cache Cargo
-        uses: actions/cache@v3
+        uses: actions/cache@v5
         with:
           path: |
             ~/.cargo
@@ -40,7 +40,7 @@ jobs:
 
       # 6. Setup Python
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6
         with:
           python-version: '3.10'
 

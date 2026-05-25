@@ -1,0 +1,26 @@
+{
+  "name": "PiRC Standard",
+  "type": "object",
+  "required": [
+    "standard",
+    "version",
+    "category"
+  ],
+  "properties": {
+    "standard": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "category": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "security": {
+      "type": "object"
+    }
+  }
+}

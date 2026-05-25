@@ -2,7 +2,7 @@ exports.handler = async (event) => {
   try {
     const { paymentId } = JSON.parse(event.body);
 
-    const res = await fetch(`https://api.minepi.com/v2/payments/${paymentId}/approve`, {
+    const res = await fetch(`https://rpc.testnet.minepi.com/v2/payments/${paymentId}/approve`, {
       method: "POST",
       headers: {
         Authorization: `Key ${process.env.PI_API_KEY}`

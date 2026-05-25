@@ -11,7 +11,7 @@ jobs:
     
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v6
 
       - name: 🧠 Smart Dependency Resolver (Auto-Fix Missing Libs)
         run: |

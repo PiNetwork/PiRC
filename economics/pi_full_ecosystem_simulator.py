@@ -22,18 +22,18 @@ from dataclasses import dataclass
 @dataclass
 class NetworkState:
 
-    year: int
-    pioneers: int
-    apps: int
-    transactions: int
+year: int
+pioneers: int
+apps: int
+transactions: int
 
-    circulating_pi: float
-    locked_pi: float
+circulating_pi: float
+locked_pi: float
 
-    dex_liquidity: float
-    human_task_rewards: float
+dex_liquidity: float
+human_task_rewards: float
 
-    price: float
+price: float
 
 
 # -----------------------------
@@ -42,154 +42,154 @@ class NetworkState:
 
 class PiFullEcosystemSimulator:
 
-    def __init__(self):
+def __init__(self):
 
-        self.state = NetworkState(
+self.state = NetworkState(
 
-            year=0,
+year=0,
 
-            pioneers=17_700_000,
-            apps=300,
-            transactions=2_000_000,
+pioneers=17_700_000,
+apps=300,
+transactions=2_000_000,
 
-            circulating_pi=3_000_000_000,
-            locked_pi=7_000_000_000,
+circulating_pi=3_000_000_000,
+locked_pi=7_000_000_000,
 
-            dex_liquidity=100_000_000,
-            human_task_rewards=0,
+dex_liquidity=100_000_000,
+human_task_rewards=0,
 
-            price=0.5
-        )
+price=0.5
+)
 
-    # -------------------------
-    # Network Growth
-    # -------------------------
+# -------------------------
+# Network Growth
+# -------------------------
 
-    def simulate_user_growth(self):
+def simulate_user_growth(self):
 
-        growth_rate = random.uniform(0.03, 0.12)
+growth_rate = random.uniform(0.03, 0.12)
 
-        new_users = int(self.state.pioneers * growth_rate)
+new_users = int(self.state.pioneers * growth_rate)
 
-        self.state.pioneers += new_users
-
-
-    # -------------------------
-    # App Ecosystem Growth
-    # -------------------------
-
-    def simulate_app_growth(self):
-
-        growth = int(self.state.apps * random.uniform(0.05, 0.25))
-
-        self.state.apps += growth
+self.state.pioneers += new_users
 
 
-    # -------------------------
-    # Activity
-    # -------------------------
+# -------------------------
+# App Ecosystem Growth
+# -------------------------
 
-    def simulate_transactions(self):
+def simulate_app_growth(self):
 
-        tx_per_user = random.uniform(0.1, 0.6)
+growth = int(self.state.apps * random.uniform(0.05, 0.25))
 
-        self.state.transactions = int(
-            self.state.pioneers * tx_per_user
-        )
+self.state.apps += growth
 
 
-    # -------------------------
-    # Human Task Economy
-    # -------------------------
+# -------------------------
+# Activity
+# -------------------------
 
-    def simulate_human_tasks(self):
+def simulate_transactions(self):
 
-        tasks = int(self.state.pioneers * random.uniform(0.01, 0.05))
+tx_per_user = random.uniform(0.1, 0.6)
 
-        reward = tasks * random.uniform(0.02, 0.08)
-
-        self.state.human_task_rewards += reward
-
-        self.state.circulating_pi += reward
+self.state.transactions = int(
+self.state.pioneers * tx_per_user
+)
 
 
-    # -------------------------
-    # DEX Liquidity
-    # -------------------------
+# -------------------------
+# Human Task Economy
+# -------------------------
 
-    def simulate_dex_liquidity(self):
+def simulate_human_tasks(self):
 
-        new_liquidity = self.state.transactions * random.uniform(0.001, 0.01)
+tasks = int(self.state.pioneers * random.uniform(0.01, 0.05))
 
-        self.state.dex_liquidity += new_liquidity
+reward = tasks * random.uniform(0.02, 0.08)
 
+self.state.human_task_rewards += reward
 
-    # -------------------------
-    # Token Locking
-    # -------------------------
-
-    def simulate_token_locking(self):
-
-        lock_rate = random.uniform(0.01, 0.04)
-
-        locked = self.state.circulating_pi * lock_rate
-
-        self.state.circulating_pi -= locked
-        self.state.locked_pi += locked
+self.state.circulating_pi += reward
 
 
-    # -------------------------
-    # Price Model
-    # -------------------------
+# -------------------------
+# DEX Liquidity
+# -------------------------
 
-    def price_discovery(self):
+def simulate_dex_liquidity(self):
 
-        demand = (
-            self.state.transactions * 0.00005 +
-            self.state.dex_liquidity * 0.000002 +
-            self.state.apps * 0.01
-        )
+new_liquidity = self.state.transactions * random.uniform(0.001, 0.01)
 
-        supply = self.state.circulating_pi
-
-        new_price = demand / supply * 100000
-
-        self.state.price = max(new_price, 0.01)
+self.state.dex_liquidity += new_liquidity
 
 
-    # -------------------------
-    # Year Simulation
-    # -------------------------
+# -------------------------
+# Token Locking
+# -------------------------
 
-    def run_year(self):
+def simulate_token_locking(self):
 
-        self.state.year += 1
+lock_rate = random.uniform(0.01, 0.04)
 
-        self.simulate_user_growth()
-        self.simulate_app_growth()
-        self.simulate_transactions()
-        self.simulate_human_tasks()
-        self.simulate_dex_liquidity()
-        self.simulate_token_locking()
-        self.price_discovery()
+locked = self.state.circulating_pi * lock_rate
+
+self.state.circulating_pi -= locked
+self.state.locked_pi += locked
 
 
-    # -------------------------
-    # Summary
-    # -------------------------
+# -------------------------
+# Price Model
+# -------------------------
 
-    def summary(self):
+def price_discovery(self):
 
-        return {
-            "year": self.state.year,
-            "pioneers": self.state.pioneers,
-            "apps": self.state.apps,
-            "transactions": self.state.transactions,
-            "circulating_pi": round(self.state.circulating_pi, 2),
-            "locked_pi": round(self.state.locked_pi, 2),
-            "dex_liquidity": round(self.state.dex_liquidity, 2),
-            "price_estimate": round(self.state.price, 4)
-        }
+demand = (
+self.state.transactions * 0.00005 +
+self.state.dex_liquidity * 0.000002 +
+self.state.apps * 0.01
+)
+
+supply = self.state.circulating_pi
+
+new_price = demand / supply * 100000
+
+self.state.price = max(new_price, 0.01)
+
+
+# -------------------------
+# Year Simulation
+# -------------------------
+
+def run_year(self):
+
+self.state.year += 1
+
+self.simulate_user_growth()
+self.simulate_app_growth()
+self.simulate_transactions()
+self.simulate_human_tasks()
+self.simulate_dex_liquidity()
+self.simulate_token_locking()
+self.price_discovery()
+
+
+# -------------------------
+# Summary
+# -------------------------
+
+def summary(self):
+
+return {
+"year": self.state.year,
+"pioneers": self.state.pioneers,
+"apps": self.state.apps,
+"transactions": self.state.transactions,
+"circulating_pi": round(self.state.circulating_pi, 2),
+"locked_pi": round(self.state.locked_pi, 2),
+"dex_liquidity": round(self.state.dex_liquidity, 2),
+"price_estimate": round(self.state.price, 4)
+}
 
 
 # -----------------------------
@@ -198,12 +198,12 @@ class PiFullEcosystemSimulator:
 
 if __name__ == "__main__":
 
-    sim = PiFullEcosystemSimulator()
+sim = PiFullEcosystemSimulator()
 
-    YEARS = 50
+YEARS = 50
 
-    for _ in range(YEARS):
+for _ in range(YEARS):
 
-        sim.run_year()
+sim.run_year()
 
-        print(sim.summary())
+print(sim.summary())

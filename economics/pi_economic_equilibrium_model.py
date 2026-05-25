@@ -32,19 +32,19 @@ import random
 @dataclass
 class EconomicState:
 
-    pioneers: int
-    apps: int
+pioneers: int
+apps: int
 
-    circulating_supply: float
-    locked_supply: float
+circulating_supply: float
+locked_supply: float
 
-    liquidity: float
+liquidity: float
 
-    velocity: float
+velocity: float
 
-    transaction_volume: float
+transaction_volume: float
 
-    price: float
+price: float
 
 
 # --------------------------------------
@@ -53,156 +53,156 @@ class EconomicState:
 
 class PiEconomicEquilibriumModel:
 
-    def __init__(self):
+def __init__(self):
 
-        self.state = EconomicState(
+self.state = EconomicState(
 
-            pioneers=17_700_000,
-            apps=300,
+pioneers=17_700_000,
+apps=300,
 
-            circulating_supply=3_000_000_000,
-            locked_supply=7_000_000_000,
+circulating_supply=3_000_000_000,
+locked_supply=7_000_000_000,
 
-            liquidity=100_000_000,
+liquidity=100_000_000,
 
-            velocity=2.0,
+velocity=2.0,
 
-            transaction_volume=0,
+transaction_volume=0,
 
-            price=0.5
-        )
+price=0.5
+)
 
 
-    # ----------------------------------
-    # Utility demand
-    # ----------------------------------
+# ----------------------------------
+# Utility demand
+# ----------------------------------
 
-    def utility_demand(self):
+def utility_demand(self):
 
-        app_factor = math.log(self.state.apps + 1)
+app_factor = math.log(self.state.apps + 1)
 
-        user_factor = math.log(self.state.pioneers)
+user_factor = math.log(self.state.pioneers)
 
-        demand = app_factor * user_factor * 100000
+demand = app_factor * user_factor * 100000
 
-        return demand
+return demand
 
 
-    # ----------------------------------
-    # Network effect
-    # ----------------------------------
+# ----------------------------------
+# Network effect
+# ----------------------------------
 
-    def network_effect(self):
+def network_effect(self):
 
-        # Metcalfe-style scaling
+# Metcalfe-style scaling
 
-        users = self.state.pioneers
+users = self.state.pioneers
 
-        effect = math.sqrt(users)
+effect = math.sqrt(users)
 
-        return effect
+return effect
 
 
-    # ----------------------------------
-    # Velocity update
-    # ----------------------------------
+# ----------------------------------
+# Velocity update
+# ----------------------------------
 
-    def update_velocity(self):
+def update_velocity(self):
 
-        utility = self.utility_demand()
+utility = self.utility_demand()
 
-        self.state.velocity = 1 + utility / 1_000_000
+self.state.velocity = 1 + utility / 1_000_000
 
 
-    # ----------------------------------
-    # Transaction volume
-    # ----------------------------------
+# ----------------------------------
+# Transaction volume
+# ----------------------------------
 
-    def update_transactions(self):
+def update_transactions(self):
 
-        demand = self.utility_demand()
+demand = self.utility_demand()
 
-        self.state.transaction_volume = demand * self.state.velocity
+self.state.transaction_volume = demand * self.state.velocity
 
 
-    # ----------------------------------
-    # Liquidity multiplier
-    # ----------------------------------
+# ----------------------------------
+# Liquidity multiplier
+# ----------------------------------
 
-    def liquidity_multiplier(self):
+def liquidity_multiplier(self):
 
-        liquidity_ratio = self.state.liquidity / self.state.circulating_supply
+liquidity_ratio = self.state.liquidity / self.state.circulating_supply
 
-        multiplier = 1 + liquidity_ratio * 5
+multiplier = 1 + liquidity_ratio * 5
 
-        return multiplier
+return multiplier
 
 
-    # ----------------------------------
-    # Equilibrium price
-    # ----------------------------------
+# ----------------------------------
+# Equilibrium price
+# ----------------------------------
 
-    def compute_equilibrium_price(self):
+def compute_equilibrium_price(self):
 
-        self.update_velocity()
+self.update_velocity()
 
-        self.update_transactions()
+self.update_transactions()
 
-        demand = self.state.transaction_volume
+demand = self.state.transaction_volume
 
-        supply = self.state.circulating_supply
+supply = self.state.circulating_supply
 
-        base_price = demand / supply
+base_price = demand / supply
 
-        network_multiplier = self.network_effect() / 1000
+network_multiplier = self.network_effect() / 1000
 
-        liquidity_multiplier = self.liquidity_multiplier()
+liquidity_multiplier = self.liquidity_multiplier()
 
-        price = base_price * network_multiplier * liquidity_multiplier
+price = base_price * network_multiplier * liquidity_multiplier
 
-        self.state.price = price
+self.state.price = price
 
-        return price
+return price
 
 
-    # ----------------------------------
-    # Growth simulation
-    # ----------------------------------
+# ----------------------------------
+# Growth simulation
+# ----------------------------------
 
-    def simulate_growth(self):
+def simulate_growth(self):
 
-        new_users = int(self.state.pioneers * random.uniform(0.03, 0.12))
+new_users = int(self.state.pioneers * random.uniform(0.03, 0.12))
 
-        self.state.pioneers += new_users
+self.state.pioneers += new_users
 
-        new_apps = int(self.state.apps * random.uniform(0.05, 0.20))
+new_apps = int(self.state.apps * random.uniform(0.05, 0.20))
 
-        self.state.apps += new_apps
+self.state.apps += new_apps
 
-        liquidity_growth = self.state.liquidity * random.uniform(0.02, 0.10)
+liquidity_growth = self.state.liquidity * random.uniform(0.02, 0.10)
 
-        self.state.liquidity += liquidity_growth
+self.state.liquidity += liquidity_growth
 
 
-    # ----------------------------------
-    # Year step
-    # ----------------------------------
+# ----------------------------------
+# Year step
+# ----------------------------------
 
-    def run_year(self):
+def run_year(self):
 
-        self.simulate_growth()
+self.simulate_growth()
 
-        price = self.compute_equilibrium_price()
+price = self.compute_equilibrium_price()
 
-        return {
+return {
 
-            "pioneers": self.state.pioneers,
-            "apps": self.state.apps,
-            "velocity": round(self.state.velocity, 3),
-            "transaction_volume": round(self.state.transaction_volume, 2),
-            "liquidity": round(self.state.liquidity, 2),
-            "price_equilibrium": round(price, 4)
-        }
+"pioneers": self.state.pioneers,
+"apps": self.state.apps,
+"velocity": round(self.state.velocity, 3),
+"transaction_volume": round(self.state.transaction_volume, 2),
+"liquidity": round(self.state.liquidity, 2),
+"price_equilibrium": round(price, 4)
+}
 
 
 # --------------------------------------
@@ -211,12 +211,12 @@ class PiEconomicEquilibriumModel:
 
 if __name__ == "__main__":
 
-    model = PiEconomicEquilibriumModel()
+model = PiEconomicEquilibriumModel()
 
-    YEARS = 30
+YEARS = 30
 
-    for year in range(YEARS):
+for year in range(YEARS):
 
-        result = model.run_year()
+result = model.run_year()
 
-        print("Year", year + 1, result)
+print("Year", year + 1, result)

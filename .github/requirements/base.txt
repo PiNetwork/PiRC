@@ -1,7 +1,7 @@
 # Python dependencies for repository management and automation
 
 # Code formatters
-black==23.12.1
+black==26.3.1
 isort==5.13.2
 autopep8==2.0.4
 
@@ -16,13 +16,13 @@ safety==2.3.5
 pip-audit==2.6.1
 
 # Testing
-pytest==7.4.3
+pytest==9.0.3
 pytest-cov==4.1.0
 
 # Git utilities
 gitpython==3.1.40
 
 # Utilities
-requests==2.31.0
+requests==2.33.0
 pyyaml==6.0.1
 toml==0.10.2

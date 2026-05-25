@@ -8,8 +8,8 @@ print("Without Trust:", round(result["without_trust"], 3))
 print("With Trust:", round(result["with_trust"], 3))
 
 improvement = attack_resistance(
-    result["without_trust"],
-    result["with_trust"]
+result["without_trust"],
+result["with_trust"]
 )
 
 print("Attack Resistance:", round(improvement, 3))

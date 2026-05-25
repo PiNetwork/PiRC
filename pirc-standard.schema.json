@@ -1,0 +1,11 @@
+{
+  "standard_name": "PiRC-GeoVision",
+  "version": "1.0.0",
+  "category": "geospatial",
+  "description": "Geospatial anomaly detection standard",
+  "requirements": [],
+  "security": {
+    "audit_required": true,
+    "immutable_logs": true
+  }
+}

@@ -1,0 +1,8 @@
+[package]
+name = "pirc-246"
+version = "1.0.0"
+edition = "2024"
+[dependencies]
+soroban-sdk = "26.0.0"
+[lib]
+crate-type = ["cdylib"]

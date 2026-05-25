@@ -1,0 +1,12 @@
+{
+  "mainnet": {
+    "version": "v23",
+    "rpc": "https://rpc.mainnet.minepi.com",
+    "status": "active"
+  },
+  "testnet": {
+    "version": "v26",
+    "rpc": "https://rpc.testnet.minepi.com",
+    "status": "active"
+  }
+}

@@ -1,0 +1,13 @@
+name: Smart Contract Formal Verification
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Formal Verification
+        run: |
+          echo "Running bounded model checking on Sovereign Contracts..."

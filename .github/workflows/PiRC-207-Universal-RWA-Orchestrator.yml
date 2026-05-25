@@ -11,7 +11,7 @@ jobs:
     
     steps:
       - name: Deep-Clone Repository (All 23 Branches)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -38,7 +38,7 @@ jobs:
           git commit -m "chore: professional synthesis of 23 ecosystem branches" || echo "Stable"
 
       - name: Setup Node.js Environment
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 20
 

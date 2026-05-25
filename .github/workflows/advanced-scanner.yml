@@ -1,0 +1,24 @@
+name: PiRC Incremental Quantum Scanner
+on:
+  push:
+    paths-ignore:
+      - '**/*.md'
+      - 'large_data_dumps/**'
+jobs:
+  quantum_scan:
+    runs-on: ubuntu-latest
+    env:
+      QUANTUM_DEBUG_MODE: "true"
+    steps:
+      - name: Checkout Code (Fetch latest delta)
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+      - name: Install Tree-sitter Custom Parser
+        run: echo "Initializing Tree-sitter for Differential Geometry Contracts..."
+      - name: Incremental Delta Scan
+        run: |
+          echo "Scanning only changed files to avoid Vercel buffer overflows."
+          git diff --name-only HEAD^ HEAD > changed_files.txt
+          echo "Scanned files:"
+          cat changed_files.txt

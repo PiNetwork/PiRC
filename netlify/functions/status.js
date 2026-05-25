@@ -5,7 +5,7 @@
 
 const ISSUER = "GA3ECRFJ6SO5BW6NEIKW3ACJXNG5UNBTLRRXWC742NHUEDV6KL3RNEN6";
 const SUBSCRIPTION = "CCUF75B6W3HRJTJD6O7OXNI72HGJ7DERZ5MUNOMFMSK23ME5GUIKPFYV";
-const HORIZON = process.env.STELLAR_HORIZON_URL || "https://api.testnet.minepi.com";
+const HORIZON = process.env.STELLAR_HORIZON_URL || "https://rpc.testnet.minepi.com";
 const SOROBAN = process.env.SOROBAN_RPC_URL || "https://soroban-testnet.stellar.org:443";
 
 const PACKETS = [

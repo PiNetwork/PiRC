@@ -11,7 +11,7 @@ jobs:
     
     steps:
       - name: "Phase 1: Deep-Clone Global Warehouse (23 Branches)"
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 

@@ -4,7 +4,7 @@ export const PIRC_CONFIG = {
     REGISTRY_CONTRACT: "CAEUNHEUXACISTVHICFNISFRTRVSK5IALA3H5MUT7P4JKU5L3IPSKG4B",
     HOME_DOMAIN: "ze0ro99.github.io/PiRC",
     NETWORK_PASSPHRASE: "Pi Testnet",
-    HORIZON_URL: "https://api.testnet.minepi.com",
+    HORIZON_URL: "https://rpc.testnet.minepi.com",
     RPC_URL: "https://testnet.sorobanrpc.com"
 };
 
