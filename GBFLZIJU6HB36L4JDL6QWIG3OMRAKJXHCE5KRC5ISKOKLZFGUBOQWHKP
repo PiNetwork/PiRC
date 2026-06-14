@@ -1,0 +1,26 @@
+flowchart LR
+
+  %% --- Area A: Participation (Launchpad window) ---
+  subgraph A[" "]
+    Pioneers[Pioneers]
+    StakedPi[Staked Pi]
+    Pioneers -->|stake Pi| StakedPi
+    StakedPi -->|released back| Pioneers
+  end
+
+  %% --- Area B: Liquidity Formation (Launchpad) ---
+  subgraph B["Liquidity Formation"]
+    Escrow[Escrow Wallet]
+    LP["Liquidity Pool<BR>(LP)"]
+    Escrow -->|deposit| LP
+  end
+
+  %% --- Area C: Project Distribution (Launchpad) ---
+  subgraph C["Project"]
+    Project[Project]
+    Project -->|tokens| Pioneers
+    Project -->|tokens| Escrow
+  end
+
+  %% Commitments flow into escrow during launchpad
+  Pioneers -->|"Commit Pi (pay)"| Escrow
