@@ -1,0 +1,128 @@
+{
+  "document": {
+    "title": "PiRC - Section 4: Allocation Period",
+    "version": "2.0.0",
+    "source_design1": "https://github.com/Tsukimarf/PiRC/blob/main/PiRC1/4-allocation/4-allocation%20design%201.md",
+    "source_design2": "https://github.com/Tsukimarf/PiRC/blob/main/PiRC1/4-allocation/4-allocation%20design%202.md",
+    "next_section": "5-tge-state",
+    "changelog": [
+      { "version": "1.0.0", "note": "Design Option 2 only (deposit + swap)" },
+      { "version": "2.0.0", "note": "Added Design Option 1 (deposit-only); unified schema across both options; multi-language database (SQL, JS, JSON, Python, C++)" }
+    ]
+  },
+
+  "notation": {
+    "T":        { "symbol": "T",        "name": "Total Ecosystem Token Allocation", "unit": "tokens" },
+    "C":        { "symbol": "C",        "name": "Total Pi Committed",               "unit": "Pi" },
+    "p_list":   { "symbol": "p_list",   "name": "Listing Price",                    "unit": "Pi/token" },
+    "p_init":   { "symbol": "p_init",   "name": "Initial LP Spot Price (Design 2)", "unit": "Pi/token" },
+    "T_engage": { "symbol": "T_engage", "name": "Engagement Bonus Bucket (Design 1)", "fraction": 0.05, "unit": "tokens" }
+  },
+
+  "designs": {
+    "1": {
+      "label": "Design Option 1 - Deposit-Only Model",
+      "description": "Single clearing price; LP formed purely by deposit; engagement discount from a fixed 5% token bonus bucket split across three tiers.",
+      "token_buckets": {
+        "purchase":  { "fraction": 1.0,  "formula": "T",       "destination": "Participants (base allocation)" },
+        "liquidity": { "fraction": 1.0,  "formula": "T",       "destination": "Liquidity Pool (LP)" },
+        "engage":    { "fraction": 0.05, "formula": "0.05 * T", "destination": "Engagement bonus tiers" }
+      },
+      "listing_price_formula": "p_list = C / T",
+      "engagement_tiers": [
+        { "tier": "top",    "rank_fraction": [0.0, 0.3333], "engage_share": 0.6667, "avg_bonus_pct": 10.0, "p_eff_over_p_list": 0.909 },
+        { "tier": "middle", "rank_fraction": [0.3333, 0.6667], "engage_share": 0.3333, "avg_bonus_pct": 5.0, "p_eff_over_p_list": 0.952 },
+        { "tier": "bottom", "rank_fraction": [0.6667, 1.0], "engage_share": 0.0, "avg_bonus_pct": 0.0, "p_eff_over_p_list": 1.000 }
+      ]
+    },
+    "2": {
+      "label": "Design Option 2 - Deposit + Swap Model",
+      "description": "LP formation using both deposit and swap operations; continuous engagement-ranked discount curve.",
+      "token_split": {
+        "lp_portion":         { "percent": 80, "fraction": 0.8, "destination": "Liquidity Pool (LP)" },
+        "fixed_price_portion":{ "percent": 20, "fraction": 0.2, "destination": "Sold at Listing Price to Pioneers" }
+      },
+      "pi_split": {
+        "bucket_A": { "label": "Bucket A - Fixed Price (Step 1)", "fraction": 0.5, "purpose": "Direct purchase of 20% of T at listing price" },
+        "bucket_B": { "label": "Bucket B - Engagement Swaps (Step 3)", "fraction": 0.5, "purpose": "Engagement-ranked swaps from LP" }
+      },
+      "listing_price_formula": "p_list = C / (0.4 * T)",
+      "steps": [
+        {
+          "step": 1,
+          "name": "Fixed-Price Delivery",
+          "pi_used_formula": "C / 2",
+          "tokens_delivered_formula": "0.2 * T",
+          "listing_price_formula": "p_list = (C/2) / (0.2*T) = C / (0.4*T)"
+        },
+        {
+          "step": 2,
+          "name": "Escrow Deposit and Pool Creation",
+          "pi_deposited_formula": "C / 2",
+          "tokens_deposited_formula": "0.8 * T",
+          "initial_spot_price_formula": "p_init = (C/2) / (0.8*T) = p_list / 4",
+          "constant_product_formula": "k = 0.4 * C * T",
+          "escrow_lockup": { "action": "Signing authority removed to 0", "irreversible": true }
+        },
+        {
+          "step": 3,
+          "name": "Automated Engagement-Based Swaps",
+          "ranking_basis": "Engagement Score (Participation Window)",
+          "order": "Highest-to-lowest engagement",
+          "swap_price_range": { "first": "p_list / 4", "last": "p_list" },
+          "discount_range": { "max_percent": 60, "min_percent": 0 },
+          "lockup_policy": "Higher discount -> longer post-TGE lockup (Step 3 tokens only)",
+          "lp_swap_fee_percent": 0.3
+        }
+      ],
+      "effective_price_curve": [
+        { "s_fraction": 0.0, "p_eff_norm": 0.400 },
+        { "s_fraction": 0.1, "p_eff_norm": 0.465 },
+        { "s_fraction": 0.2, "p_eff_norm": 0.529 },
+        { "s_fraction": 0.3, "p_eff_norm": 0.594 },
+        { "s_fraction": 0.4, "p_eff_norm": 0.658 },
+        { "s_fraction": 0.5, "p_eff_norm": 0.720 },
+        { "s_fraction": 0.6, "p_eff_norm": 0.780 },
+        { "s_fraction": 0.7, "p_eff_norm": 0.839 },
+        { "s_fraction": 0.8, "p_eff_norm": 0.895 },
+        { "s_fraction": 0.9, "p_eff_norm": 0.949 },
+        { "s_fraction": 1.0, "p_eff_norm": 1.000 }
+      ]
+    }
+  },
+
+  "chains": {
+    "supported": ["Pi Network (Stellar/Soroban)", "Solana", "Ethereum"],
+    "default_settlement": "Pi Network (Stellar/Soroban)",
+    "note": "Allocation math is chain-agnostic; escrow lock and LP-seeding actions map to Soroban contract calls on Pi Network by default."
+  },
+
+  "seed_data": {
+    "demo_projects": [
+      {
+        "project_id": "demo-001",
+        "name": "Demo Launch Alpha",
+        "design_option": 1,
+        "T": 1000000,
+        "C": 250000,
+        "participants": [
+          { "participant_id": "p1", "pi_committed": 5000,  "engagement_rank_pct": 0.05 },
+          { "participant_id": "p2", "pi_committed": 2000,  "engagement_rank_pct": 0.40 },
+          { "participant_id": "p3", "pi_committed": 1000,  "engagement_rank_pct": 0.85 }
+        ]
+      },
+      {
+        "project_id": "demo-002",
+        "name": "Demo Launch Beta",
+        "design_option": 2,
+        "T": 1000000,
+        "C": 400000,
+        "participants": [
+          { "participant_id": "p1", "pi_committed": 1000, "s_cumulative": 0 },
+          { "participant_id": "p2", "pi_committed": 1000, "s_cumulative": 100000 },
+          { "participant_id": "p3", "pi_committed": 1000, "s_cumulative": 200000 }
+        ]
+      }
+    ]
+  }
+}

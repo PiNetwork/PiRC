@@ -1,0 +1,227 @@
+{
+  "meta": {
+    "name": "PiRC1 – Pi Ecosystem Token Design Database",
+    "version": "1.0.0",
+    "source": "https://github.com/PiNetwork/PiRC",
+    "description": "Complete structured database derived from PiRC1 specification",
+    "created": "2026-04-12",
+    "sections": ["vision", "core_design", "participation", "allocation", "liquidity", "projects", "pioneers"]
+  },
+
+  "config": {
+    "baseline_lockup_pct": 0.90,
+    "baseline_lockup_years": 3,
+    "baseline_cutoff_date": "2026-02-20",
+    "allocation_designs": ["design1", "design2"],
+    "phases": ["participation_window", "allocation_period", "tge", "post_tge"]
+  },
+
+  "vision": {
+    "title": "Pi Launchpad – Utility-First Token Framework",
+    "pillars": [
+      {
+        "id": "P1",
+        "name": "Stake",
+        "description": "Users stake Pi to receive PiPower, which determines maximum token allocation capacity."
+      },
+      {
+        "id": "P2",
+        "name": "Escrow",
+        "description": "Committed Pi flows into an Escrow Wallet – never transferred to the project team."
+      },
+      {
+        "id": "P3",
+        "name": "Liquidity",
+        "description": "All committed Pi and project tokens form a permanent, locked liquidity pool (LP)."
+      },
+      {
+        "id": "P4",
+        "name": "Market Activation",
+        "description": "TGE opens the LP/trading market for all users after the Allocation Period ends."
+      }
+    ],
+    "principles": [
+      "Product-first: projects must have a working app before token launch",
+      "No Pi transferred to project teams – all Pi becomes liquidity",
+      "Tokens usable immediately at TGE",
+      "Engagement-weighted allocation over pure speculation",
+      "Anti-rug-pull via permanently locked initial liquidity"
+    ]
+  },
+
+  "core_design": {
+    "phases": [
+      {
+        "id": "phase_1",
+        "name": "Participation Window",
+        "description": "Users stake Pi → receive PiPower. Simultaneously engage with the project's live app. At window close, staking and engagement are snapshotted.",
+        "outputs": ["PiPower per participant", "Engagement rank", "Pi commitment caps"]
+      },
+      {
+        "id": "phase_2",
+        "name": "Allocation Period",
+        "description": "Launchpad forms permanent liquidity pool. Tokens distributed to participants per allocation design.",
+        "outputs": ["LP seeded", "Tokens distributed"]
+      },
+      {
+        "id": "phase_3",
+        "name": "TGE (Token Generation Event)",
+        "description": "LP and trading market open for all. Tokens immediately usable for their utility.",
+        "outputs": ["Market open", "Token utility active"]
+      },
+      {
+        "id": "phase_4",
+        "name": "Post-TGE",
+        "description": "Ongoing unlock schedules enforced. Community governance and engagement incentives continue.",
+        "outputs": ["Unlock schedule enforcement", "Ongoing rewards"]
+      }
+    ],
+    "liquidity_rules": {
+      "pi_destination": "Liquidity Pool (NOT project team)",
+      "initial_lp_withdrawal": "Permanently disabled for project Escrow Wallet",
+      "lp_accessible_to": "All users for Pi ⟺ Token swaps or new liquidity deposits",
+      "project_lp_contribution": "Project contributes additional tokens to pair with Pioneer Pi commitments"
+    }
+  },
+
+  "participation": {
+    "pipower_formula": {
+      "description": "PiPower ∝ (user staked Pi) / (total staked Pi in network) × T_available",
+      "variables": {
+        "T_available": "Total tokens provided by project for participants",
+        "staked_pi_user": "Pi staked by this participant",
+        "staked_pi_total": "Total Pi staked across all participants in launch",
+        "PiPower_Baseline": "Auto-granted to qualifying Long-Term Lockers"
+      }
+    },
+    "baseline_pipower_eligibility": {
+      "condition": "Active Pi lockup ≥ 90% of mined tokens for ≥ 3 years",
+      "cutoff_date": "2026-02-20",
+      "purpose": "Acknowledge Long-Term Lockers who may lack unlocked Pi to stake"
+    },
+    "engagement_measurement": {
+      "metrics": ["In-app registration", "Onboarding completion", "Feature use", "Milestones reached"],
+      "effect": "Engagement rank determines effective pricing / bonus discounts at allocation"
+    },
+    "tiers": [
+      {
+        "id": "tier_standard",
+        "name": "Standard Participant",
+        "condition": "Staked Pi > 0",
+        "pipower_multiplier": 1.0
+      },
+      {
+        "id": "tier_baseline",
+        "name": "Long-Term Locker Baseline",
+        "condition": "lockup_pct >= 0.90 AND lockup_years >= 3 AND account_before_2026-02-20",
+        "pipower_multiplier": "platform_defined_baseline"
+      }
+    ]
+  },
+
+  "allocation": {
+    "design1": {
+      "name": "Design 1 – Stability-Oriented Model",
+      "description": "Equal token buckets for purchase and liquidity. Moderate engagement-based bonuses. Smooth price discovery.",
+      "token_split": {
+        "purchase_bucket": "50%",
+        "liquidity_bucket": "50%"
+      },
+      "engagement_bonus": "Moderate – small discount tiers based on engagement rank",
+      "lock_up_on_bonus": false,
+      "price_discovery": "Smooth / stable"
+    },
+    "design2": {
+      "name": "Design 2 – Engagement-Weighted Model",
+      "description": "Hybrid fixed-price + swap mechanism. Larger discounts for highly engaged users. Lock-up proportional to discount.",
+      "mechanism": "Fixed-price + AMM swap hybrid",
+      "engagement_bonus": "Large – up to significant discount for top-ranked participants",
+      "lock_up_on_bonus": true,
+      "lock_up_rule": "Lock-up period proportional to discount level received",
+      "price_discovery": "Dynamic / engagement-driven"
+    },
+    "common_rules": [
+      "Unlock schedules for projects not more favorable than community unlock schedules",
+      "All Pi commitments flow to LP, never to project",
+      "Escrow Wallet permanently restricted from withdrawing initial liquidity"
+    ]
+  },
+
+  "projects": [
+    {
+      "id": "proj_001",
+      "name": "Example DeFi App",
+      "status": "registration",
+      "category": "DeFi",
+      "has_working_product": true,
+      "token_symbol": "EDA",
+      "total_supply": 1000000000,
+      "tokens_for_launchpad": 200000000,
+      "tokens_for_liquidity": 100000000,
+      "tokens_for_team": 100000000,
+      "team_unlock_schedule_months": 24,
+      "pi_price_per_token": null,
+      "tge_date": null,
+      "participation_window_start": null,
+      "participation_window_end": null,
+      "allocation_design": "design1",
+      "escrow_wallet": "GXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      "lp_address": null,
+      "use_cases": ["In-app payments", "Governance voting", "Staking rewards"]
+    }
+  ],
+
+  "pioneers": [
+    {
+      "id": "pioneer_001",
+      "username": "alice_pi",
+      "mined_pi": 5000.0,
+      "locked_pi": 4800.0,
+      "lockup_pct": 0.96,
+      "lockup_start_date": "2022-01-15",
+      "lockup_years": 4.24,
+      "account_created": "2021-03-10",
+      "baseline_pipower_eligible": true,
+      "kyc_verified": true,
+      "launches_participated": [],
+      "total_tokens_received": {}
+    },
+    {
+      "id": "pioneer_002",
+      "username": "bob_pi",
+      "mined_pi": 300.0,
+      "locked_pi": 200.0,
+      "lockup_pct": 0.667,
+      "lockup_start_date": "2023-06-01",
+      "lockup_years": 2.86,
+      "account_created": "2022-09-20",
+      "baseline_pipower_eligible": false,
+      "kyc_verified": true,
+      "launches_participated": [],
+      "total_tokens_received": {}
+    }
+  ],
+
+  "launches": [
+    {
+      "id": "launch_001",
+      "project_id": "proj_001",
+      "status": "upcoming",
+      "allocation_design": "design1",
+      "participation_window": {
+        "start": null,
+        "end": null
+      },
+      "total_pi_committed": 0,
+      "total_participants": 0,
+      "lp_pi_locked": 0,
+      "lp_tokens_locked": 0,
+      "tge_token_price_pi": null,
+      "participants": []
+    }
+  ],
+
+  "liquidity_pools": [],
+
+  "engagement_snapshots": []
+}
