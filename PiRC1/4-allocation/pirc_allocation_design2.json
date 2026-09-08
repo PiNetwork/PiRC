@@ -1,0 +1,193 @@
+{
+  "document": {
+    "title": "PiRC - Section 4: Allocation Period (Design Option 2)",
+    "source": "https://github.com/Tsukimarf/PiRC/blob/Tsukimarf-patch-1/PiRC1/4-allocation/4-allocation%20design%202.md",
+    "next_section": "5-tge-state design 2.md",
+    "design_option": 2,
+    "description": "LP formation using both deposit and swap operations"
+  },
+
+  "notation": {
+    "T": {
+      "symbol": "T",
+      "name": "Total Ecosystem Token Allocation",
+      "description": "Total ecosystem-token amount available through the launchpad for this project (launch allocation). Includes tokens purchased by Pioneers and tokens in the Liquidity Pool.",
+      "unit": "tokens"
+    },
+    "C": {
+      "symbol": "C",
+      "name": "Total Pi Committed",
+      "description": "Total Pi committed by participants to purchase tokens of a project.",
+      "unit": "Pi"
+    },
+    "p_list": {
+      "symbol": "p_list",
+      "name": "Listing Price",
+      "description": "Listing price in Pi per token.",
+      "formula": "C / (0.4 * T)",
+      "unit": "Pi/token"
+    }
+  },
+
+  "token_split": {
+    "lp_portion": {
+      "percentage": 80,
+      "fraction": 0.8,
+      "amount_formula": "0.8 * T",
+      "destination": "Liquidity Pool (LP)"
+    },
+    "fixed_price_portion": {
+      "percentage": 20,
+      "fraction": 0.2,
+      "amount_formula": "0.2 * T",
+      "destination": "Sold at Listing Price to Pioneers"
+    }
+  },
+
+  "pi_split": {
+    "total": "C",
+    "bucket_A": {
+      "label": "Bucket A - Fixed Price (Step 1)",
+      "fraction": 0.5,
+      "amount_formula": "C / 2",
+      "purpose": "Direct purchase of 20% of T at listing price",
+      "destination": "Escrow Wallet → LP deposit"
+    },
+    "bucket_B": {
+      "label": "Bucket B - Engagement Swaps (Step 3)",
+      "fraction": 0.5,
+      "amount_formula": "C / 2",
+      "purpose": "Engagement-ranked swaps from LP",
+      "destination": "LP swap"
+    }
+  },
+
+  "steps": [
+    {
+      "step": 1,
+      "name": "Fixed-Price Delivery",
+      "description": "Half of total committed Pi (C/2) is transferred to the Escrow Wallet and directly buys 20% of the launch token allocation (0.2T) at the listing price.",
+      "pi_used_formula": "C / 2",
+      "tokens_delivered_formula": "0.2 * T",
+      "listing_price_formula": "p_list = (C/2) / (0.2*T) = C / (0.4*T)",
+      "delivery_type": "Direct sale to participants"
+    },
+    {
+      "step": 2,
+      "name": "Escrow Deposit and Pool Creation",
+      "description": "Pi from Step 1 (C/2) is paired with 80% of the launch token allocation (0.8T) and deposited into the LP by the Escrow Wallet. Escrow Wallet is then permanently locked.",
+      "pi_deposited_formula": "C / 2",
+      "tokens_deposited_formula": "0.8 * T",
+      "pool_parameters": {
+        "initial_spot_price": {
+          "formula": "p_init = (C/2) / (0.8*T) = p_list / 4",
+          "description": "Initial spot price of the LP is 1/4 of the listing price"
+        },
+        "constant_product_invariant": {
+          "symbol": "k",
+          "formula": "k = (C/2) * (0.8*T) = 0.4 * C * T",
+          "description": "AMM constant-product invariant"
+        }
+      },
+      "escrow_lockup": {
+        "action": "Escrow Wallet signing authority removed to 0",
+        "irreversible": true,
+        "reason": "Ensures no one can withdraw the initial liquidity used to seed the pool"
+      }
+    },
+    {
+      "step": 3,
+      "name": "Automated Engagement-Based Swaps",
+      "description": "Participants swap the second C/2 from LP, ordered by Engagement Score (highest first). Higher engagement = lower effective price = longer lockup.",
+      "ranking_basis": "Engagement Score measured during Participation Window",
+      "order": "Highest-to-lowest engagement score",
+      "swap_automation": true,
+      "signed_consent_at_commitment": true,
+      "lp_access": "Restricted to sequenced engagement-based swaps only. No open access during allocation period.",
+      "swap_price_range": {
+        "first_swap_price_formula": "p_init = p_list / 4",
+        "last_swap_price_formula": "p_last = C / (0.4*T) = p_list",
+        "description": "Price increases from p_list/4 to p_list as cumulative swaps progress"
+      },
+      "discount_range": {
+        "max_discount_percent": 60,
+        "min_discount_percent": 0,
+        "max_discount_recipient": "Highest-engaged participant",
+        "min_discount_recipient": "Lowest-engaged participant"
+      },
+      "lockup_policy": {
+        "description": "Discounted tokens have a lockup period after TGE",
+        "rule": "Higher discount → longer lockup period",
+        "applies_to": "Step 3 tokens only (not Step 1 listing-price tokens)"
+      },
+      "fees": {
+        "lp_swap_fee_percent": 0.3,
+        "note": "Ignored in the simplified calculations"
+      }
+    }
+  ],
+
+  "formulas": {
+    "listing_price": {
+      "formula": "p_list = C / (0.4 * T)",
+      "latex": "p_{list} = \\frac{C}{0.4T}"
+    },
+    "initial_spot_price": {
+      "formula": "p_init = p_list / 4",
+      "latex": "p_{init} = \\frac{p_{list}}{4}"
+    },
+    "last_swap_price": {
+      "formula": "p_last = p_list",
+      "latex": "p_{last} = \\frac{C}{0.4T} = p_{list}"
+    },
+    "constant_product": {
+      "formula": "k = 0.4 * C * T",
+      "latex": "k = 0.4CT"
+    },
+    "lp_reserves_at_s": {
+      "x_s": "x(s) = C/2 + s",
+      "y_s": "y(s) = k / x(s)",
+      "description": "LP reserves after cumulative swap amount s"
+    },
+    "marginal_swap_spot_price": {
+      "formula": "p_swap(s) = x(s)^2 / k",
+      "normalized": "p_swap(s) / p_list = (1/4) * (1 + 2s/C)^2",
+      "range": "Increases from 1/4 (at s=0) to 1 (at s=C/2) relative to p_list"
+    },
+    "effective_acquisition_price": {
+      "formula": "p_eff(s) = (2 * p_list * p_swap(s)) / (p_list + p_swap(s))",
+      "description": "Harmonic mean of p_list (Bucket A) and p_swap(s) (Bucket B) — equal 50/50 Pi split",
+      "min": "p_eff(0) = 0.4 * p_list  (60% discount — highest engagement)",
+      "max": "p_eff(C/2) = p_list       (0% discount — lowest engagement)"
+    }
+  },
+
+  "effective_price_distribution": {
+    "description": "p_eff(s) / p_list values at evenly spaced cumulative swap fractions (s as multiple of C/2)",
+    "x_axis_label": "Cumulative ranked-swap Pi (s) [as multiple of C/2]",
+    "y_axis_label": "Price (Pi/token) [as multiple of p_list]",
+    "data_points": [
+      { "s_fraction": 0.0, "p_eff_normalized": 0.400 },
+      { "s_fraction": 0.1, "p_eff_normalized": 0.465 },
+      { "s_fraction": 0.2, "p_eff_normalized": 0.529 },
+      { "s_fraction": 0.3, "p_eff_normalized": 0.594 },
+      { "s_fraction": 0.4, "p_eff_normalized": 0.658 },
+      { "s_fraction": 0.5, "p_eff_normalized": 0.720 },
+      { "s_fraction": 0.6, "p_eff_normalized": 0.780 },
+      { "s_fraction": 0.7, "p_eff_normalized": 0.839 },
+      { "s_fraction": 0.8, "p_eff_normalized": 0.895 },
+      { "s_fraction": 0.9, "p_eff_normalized": 0.949 },
+      { "s_fraction": 1.0, "p_eff_normalized": 1.000 }
+    ]
+  },
+
+  "token_flows": {
+    "participants_to_escrow": "Commit Pi (pay) → Escrow Wallet",
+    "participants_to_lp": "Swap Pi (ordered by engagement) → LP",
+    "lp_to_participants": "Tokens → Pioneers",
+    "project_to_pioneers": "Project tokens → Pioneers",
+    "project_to_escrow": "Project tokens → Escrow",
+    "escrow_to_lp": "Deposit → LP",
+    "staked_pi": "Pioneers stake Pi → Staked Pi → released back to Pioneers"
+  }
+}
