@@ -1,1 +1,2 @@
-See [PiRC1: Pi Ecosystem Token Design](./PiRC1/ReadMe.md)
+- [PiRC1: Pi Ecosystem Token Design](./PiRC1/ReadMe.md)
+- [PiRC2: Subscription Contract API](./PiRC2/ReadMe.md)
