@@ -1,0 +1,7 @@
+# PiRC3 wallet rounding + post-quantum encryption-at-rest module
+# Minimum supported interpreter: Python 3.10+ (uses `from __future__ import annotations`,
+# dataclasses, and the standard library only beyond the two deps below).
+# Tested against: Python 3.12.3
+
+kyber-py>=1.2.0        # ML-KEM-768 (CRYSTALS-Kyber, NIST FIPS 203) — pure Python
+cryptography>=42.0.0   # AES-256-GCM for the symmetric half of the hybrid encryption

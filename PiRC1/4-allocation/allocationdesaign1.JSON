@@ -1,0 +1,163 @@
+{
+  "document": {
+    "title": "PiRC - Section 4: Allocation Period (Design Option 1)",
+    "source": "https://github.com/Tsukimarf/PiRC/blob/Tsukimarf-patch-1/PiRC1/4-allocation/4-allocation%20design%201.md",
+    "next_section": "5-tge-state design 1.md",
+    "design_option": 1,
+    "description": "Simple-model allocation: single-clearing-price LP formation via Deposit only, with an engagement-based discount bucket."
+  },
+
+  "notation": {
+    "C": {
+      "symbol": "C",
+      "name": "Total Pi Committed",
+      "description": "Total Pi committed by participants to purchase tokens of a project.",
+      "unit": "Pi"
+    },
+    "T_purchase": {
+      "symbol": "T_purchase",
+      "name": "Purchase Bucket",
+      "description": "Tokens allocated to participants.",
+      "unit": "tokens"
+    },
+    "T_liquidity": {
+      "symbol": "T_liquidity",
+      "name": "Liquidity Bucket",
+      "description": "Tokens reserved for liquidity seeding.",
+      "unit": "tokens"
+    },
+    "T_engage": {
+      "symbol": "T_engage",
+      "name": "Engagement Bucket",
+      "description": "Tokens allocated for engagement-based discounts.",
+      "formula": "0.05 * T",
+      "unit": "tokens"
+    },
+    "p_list": {
+      "symbol": "p_list",
+      "name": "Listing Price",
+      "description": "Listing price (Pi per token) at which the LP is initialized.",
+      "formula": "C / T",
+      "unit": "Pi/token"
+    }
+  },
+
+  "initial_parameters": {
+    "T_equivalence": {
+      "description": "Purchase and liquidity buckets are set equal in size.",
+      "formula": "T = T_purchase = T_liquidity"
+    },
+    "engagement_bucket": {
+      "description": "Engagement bucket is fixed at 5% of T.",
+      "formula": "T_engage = 0.05 * T"
+    },
+    "total_supply_to_launchpad": {
+      "description": "Total tokens the project supplies to the Launchpad, forming the initial circulating supply at TGE.",
+      "formula": "T_purchase + T_liquidity + T_engage = 2.05 * T"
+    }
+  },
+
+  "token_split": {
+    "purchase_portion": {
+"fraction": 1.0,
+      "amount_formula": "T",
+      "destination": "Delivered to participants for committed Pi (C)"
+    },
+    "liquidity_portion": {
+      "fraction": 1.0,
+      "amount_formula": "T",
+      "destination": "Liquidity Pool (LP), deposited alongside all of C"
+    },
+    "engagement_portion": {
+      "fraction": 0.05,
+      "amount_formula": "0.05 * T",
+      "destination": "Distributed to participants by engagement tier"
+    }
+  },
+
+  "lp_formation": {
+    "operation": "Deposit only (no Swap)",
+    "description": "The project deposits the entire committed Pi (C) from all participants, along with the liquidity bucket T_liquidity = T, into the Escrow Wallet. The Escrow Wallet deposits the full C Pi together with T tokens into the Liquidity Pool.",
+    "lp_reserves_at_init": { "pi_reserve": "C", "token_reserve": "T" },
+    "listing_price_formula": "p_list = C / T = p"
+  },
+
+  "base_allocation": {
+    "description": "Participant i with commitment c_i receives base tokens at the listing price.",
+    "formula": "t_i_base = c_i / p_list"
+  },
+
+  "engagement_discount": {
+    "description": "T_engage = 5% of T provides a discount on p_list at purchase, based on participants' Engagement Score captured during the Participation phase. Discounts only apply to participants who commit Pi (no free-riders).",
+    "tiers": [
+      {
+        "tier": "top",
+        "rank_fraction": "1/3 most engaged",
+        "share_of_T_engage": "2/3",
+        "avg_bonus_over_base_pct": 10.0,
+        "formula": "t_i_engage = (2/3) * T_engage * (c_i / C_top)"
+      },
+      {
+        "tier": "middle",
+        "rank_fraction": "1/3 middle",
+        "share_of_T_engage": "1/3",
+        "avg_bonus_over_base_pct": 5.0,
+        "formula": "t_i_engage = (1/3) * T_engage * (c_i / C_mid)"
+      },
+      {
+        "tier": "bottom",
+        "rank_fraction": "1/3 least engaged",
+        "share_of_T_engage": "0",
+        "avg_bonus_over_base_pct": 0.0,
+        "formula": "t_i_engage = 0"
+      }
+    ]
+  },
+
+  "formulas": {
+    "listing_price": {
+      "formula": "p_list = C / T",
+      "latex": "p_{list} = \\frac{C}{T}"
+    },
+    "base_tokens": {
+      "formula": "t_i_base = c_i / p_list",
+      "latex": "t_i^{base} = \\frac{c_i}{p_{list}}"
+    },
+    "effective_price": {
+"formula": "p_eff_i = c_i / (t_i_base + t_i_engage)",
+      "latex": "p_{eff,i} = \\frac{c_i}{t_i^{base} + t_i^{discount}}"
+    },
+    "tier_bonus": {
+      "formula": "b_i = t_i_engage / t_i_base",
+      "latex": "b_i = \\frac{t_i^{engage}}{t_i^{base}}"
+    },
+    "normalized_effective_price": {
+      "formula": "p_eff_i / p_list = 1 / (1 + b_i)",
+      "latex": "\\frac{p_{eff,i}}{p_{list}} = \\frac{1}{1+b_i}"
+    }
+  },
+
+  "effective_price_by_tier": {
+    "description": "Assumes commitments roughly uniform across tiers.",
+    "x_axis_label": "Engagement rank percentile (0 = most engaged, 100 = least engaged)",
+    "y_axis_label": "p_eff / p_list",
+    "data_points": [
+      { "tier": "top",    "percentile_range": [0, 33],  "p_eff_normalized": 0.909 },
+      { "tier": "middle", "percentile_range": [34, 66], "p_eff_normalized": 0.952 },
+      { "tier": "bottom", "percentile_range": [67, 100], "p_eff_normalized": 1.000 }
+    ]
+  },
+
+  "summary": {
+    "lp_operation": "Deposit only, no Swap",
+    "lp_seed": "All committed Pi (C) plus T tokens",
+    "participant_total_tokens": "T + T_engage",
+    "engagement_distribution": "Top 1/3 gets 2/3 of T_engage; middle 1/3 gets 1/3; bottom 1/3 gets none",
+    "starting_price": "p_list = C / T",
+    "effective_prices_by_tier": {
+      "top": "0.909 * p_list",
+      "middle": "0.952 * p_list",
+      "bottom": "1.000 * p_list"
+    }
+  }
+}

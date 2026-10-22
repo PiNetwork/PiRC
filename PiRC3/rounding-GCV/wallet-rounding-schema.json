@@ -1,0 +1,37 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "WalletRoundingRecord",
+  "description": "Shared interchange shape used by every language implementation (Go, C++, Python, Node.js, JavaScript, TypeScript) and both SQL schemas. The same shape and the same rule apply to every wallet — there is no owner-specific field.",
+  "type": "object",
+  "required": ["wallet_id", "raw_balance", "decimals", "rounded_balance"],
+  "properties": {
+    "wallet_id": {
+      "type": "string",
+      "description": "Opaque wallet identifier. Carries no role/owner semantics for rounding purposes."
+    },
+    "raw_balance": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)(\\.\\d+)?$",
+      "description": "Full-precision raw amount, as a decimal string (never a float, to avoid precision loss)."
+    },
+    "decimals": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 18,
+      "default": 6,
+      "description": "Target rounding precision, identical for all wallets in a given deployment."
+    },
+    "rounded_balance": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)(\\.\\d+)?$",
+      "description": "raw_balance rounded to `decimals` places using round-half-up (away from zero), via the shared round_wallet_balance() logic."
+    },
+    "rounding_mode": {
+      "type": "string",
+      "enum": ["nearest"],
+      "default": "nearest",
+      "description": "Fixed at 'nearest' (round-half-up) for all wallets; present for forward-compatibility only, not for per-account overrides."
+    }
+  },
+  "additionalProperties": false
+}

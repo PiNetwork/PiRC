@@ -1,0 +1,18 @@
+{
+  "name": "pirc3",
+  "version": "0.2.0",
+  "description": "PiRC3 allocation system and stablecoin mechanism (design stage), with a REST API layer.",
+  "main": "app/index.js",
+  "scripts": {
+    "start": "node app/index.js",
+    "dev": "node --watch app/index.js",
+    "demo:engine": "node service/allocationEngine.js",
+    "demo:stablecoin": "node service/stablecoinMechanism.js",
+    "validate": "python3 service/pirc3_validate.py --demo"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2",
+    "sqlite3": "^5.1.7"
+  }
+}

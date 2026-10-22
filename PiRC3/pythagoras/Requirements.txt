@@ -1,0 +1,10 @@
+# PiRC3 - Python dependencies
+# Install with: pip install -r requirements.txt
+
+# No third-party packages are strictly required for the current
+# utilities (sqlite3 and json are part of the Python standard library).
+# Add packages below as the project grows, e.g.:
+
+# flask>=3.0.0        # if exposing an HTTP API
+# pandas>=2.2.0       # if doing heavier data analysis
+# python-dotenv>=1.0.0  # if loading config from a .env file

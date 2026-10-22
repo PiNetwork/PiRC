@@ -1,0 +1,75 @@
+{
+  "module": {
+    "name": "bodyfail_composition",
+    "version": "2.0.0",
+    "description": "Candlestick body/wick composition decomposition and body-failure signal detection for Pi-Nexsus algorithmic trading",
+    "languages": ["sql", "mql5", "python", "cpp", "json"],
+    "predecessor": "BodyFail Database v1 (bodyfail_events, bodyfail_labels, bodyfail_stats)"
+  },
+
+  "classification_thresholds": {
+    "doji_max_body_ratio": 0.10,
+    "marubozu_min_body_ratio": 0.85,
+    "small_wick_max_ratio": 0.10,
+    "long_wick_min_ratio": 0.60,
+    "small_body_max_ratio": 0.30
+  },
+
+  "bodyfail_trigger": {
+    "min_trigger_body_ratio": 0.70,
+    "min_retracement_ratio": 0.50,
+    "confidence_formula": "min(1.0, body_ratio * 0.6 + 0.4)"
+  },
+
+  "body_type_rules": [
+    { "type": "flat",            "condition": "range_size == 0" },
+    { "type": "doji",            "condition": "body_ratio < doji_max_body_ratio" },
+    { "type": "marubozu",        "condition": "body_ratio > marubozu_min_body_ratio" },
+    { "type": "hammer",          "condition": "direction == bullish AND lower_wick_ratio > long_wick_min_ratio AND body_ratio < small_body_max_ratio AND upper_wick_ratio < small_wick_max_ratio" },
+    { "type": "hanging_man",     "condition": "direction == bearish AND lower_wick_ratio > long_wick_min_ratio AND body_ratio < small_body_max_ratio AND upper_wick_ratio < small_wick_max_ratio" },
+    { "type": "shooting_star",   "condition": "direction == bullish AND upper_wick_ratio > long_wick_min_ratio AND body_ratio < small_body_max_ratio AND lower_wick_ratio < small_wick_max_ratio" },
+    { "type": "inverted_hammer", "condition": "direction == bearish AND upper_wick_ratio > long_wick_min_ratio AND body_ratio < small_body_max_ratio AND lower_wick_ratio < small_wick_max_ratio" },
+    { "type": "spinning_top",    "condition": "body_ratio < small_body_max_ratio (fallback)" },
+    { "type": "normal",          "condition": "default" }
+  ],
+
+  "record_schema": {
+    "bodyfail_composition": {
+      "symbol": "string",
+      "timeframe": "string (M1|M5|M15|H1|H4|D1)",
+      "candle_time": "ISO-8601 timestamp",
+      "open": "number", "high": "number", "low": "number", "close": "number", "volume": "number",
+      "range_size": "number", "body_size": "number", "body_ratio": "number 0..1",
+      "upper_wick": "number", "upper_wick_ratio": "number 0..1",
+      "lower_wick": "number", "lower_wick_ratio": "number 0..1",
+      "direction": "bullish|bearish|flat",
+      "body_type": "doji|marubozu|hammer|hanging_man|shooting_star|inverted_hammer|spinning_top|normal|flat",
+      "is_bodyfail_trigger": "boolean"
+    },
+    "bodyfail_event": {
+      "symbol": "string", "timeframe": "string",
+      "trigger_time": "ISO-8601 timestamp", "confirm_time": "ISO-8601 timestamp",
+      "direction_failed": "bullish|bearish",
+      "trigger_body_ratio": "number 0..1",
+      "retracement_ratio": "number",
+      "confidence": "number 0..1",
+      "status": "pending|confirmed|invalidated"
+    }
+  },
+
+  "seed_data": {
+    "compositions": [
+      { "symbol": "PIUSD",  "timeframe": "M15", "candle_time": "2026-09-08T00:00:00Z", "open": 0.6500, "high": 0.6620, "low": 0.6495, "close": 0.6610, "volume": 15320, "range_size": 0.0125, "body_size": 0.0110, "body_ratio": 0.88000, "upper_wick": 0.0010, "upper_wick_ratio": 0.08000, "lower_wick": 0.0005, "lower_wick_ratio": 0.04000, "direction": "bullish", "body_type": "marubozu", "is_bodyfail_trigger": true },
+      { "symbol": "PIUSD",  "timeframe": "M15", "candle_time": "2026-09-08T00:15:00Z", "open": 0.6610, "high": 0.6615, "low": 0.6540, "close": 0.6555, "volume": 9870,  "range_size": 0.0075, "body_size": 0.0055, "body_ratio": 0.73333, "upper_wick": 0.0005, "upper_wick_ratio": 0.06667, "lower_wick": 0.0015, "lower_wick_ratio": 0.20000, "direction": "bearish", "body_type": "normal", "is_bodyfail_trigger": false },
+      { "symbol": "PIUSD",  "timeframe": "M15", "candle_time": "2026-09-08T00:30:00Z", "open": 0.6555, "high": 0.6560, "low": 0.6510, "close": 0.6552, "volume": 7200,  "range_size": 0.0050, "body_size": 0.0003, "body_ratio": 0.06000, "upper_wick": 0.0005, "upper_wick_ratio": 0.10000, "lower_wick": 0.0042, "lower_wick_ratio": 0.84000, "direction": "bearish", "body_type": "doji", "is_bodyfail_trigger": false },
+      { "symbol": "PIUSD",  "timeframe": "M15", "candle_time": "2026-09-08T01:00:00Z", "open": 0.6558, "high": 0.6562, "low": 0.6470, "close": 0.6555, "volume": 11200, "range_size": 0.0092, "body_size": 0.0003, "body_ratio": 0.03261, "upper_wick": 0.0004, "upper_wick_ratio": 0.04348, "lower_wick": 0.0085, "lower_wick_ratio": 0.92391, "direction": "bearish", "body_type": "doji", "is_bodyfail_trigger": false },
+      { "symbol": "PIUSD",  "timeframe": "M15", "candle_time": "2026-09-08T01:15:00Z", "open": 0.6555, "high": 0.6640, "low": 0.6550, "close": 0.6635, "volume": 16400, "range_size": 0.0090, "body_size": 0.0080, "body_ratio": 0.88889, "upper_wick": 0.0005, "upper_wick_ratio": 0.05556, "lower_wick": 0.0005, "lower_wick_ratio": 0.05556, "direction": "bullish", "body_type": "marubozu", "is_bodyfail_trigger": true },
+      { "symbol": "BTCUSD", "timeframe": "H1",  "candle_time": "2026-09-08T00:00:00Z", "open": 58210.0, "high": 58890.0, "low": 58150.0, "close": 58840.0, "volume": 421.5, "range_size": 740.0, "body_size": 630.0, "body_ratio": 0.85135, "upper_wick": 50.0, "upper_wick_ratio": 0.06757, "lower_wick": 60.0, "lower_wick_ratio": 0.08108, "direction": "bullish", "body_type": "marubozu", "is_bodyfail_trigger": true },
+      { "symbol": "BTCUSD", "timeframe": "H1",  "candle_time": "2026-09-08T01:00:00Z", "open": 58840.0, "high": 58910.0, "low": 58020.0, "close": 58260.0, "volume": 388.2, "range_size": 890.0, "body_size": 580.0, "body_ratio": 0.65169, "upper_wick": 70.0, "upper_wick_ratio": 0.07865, "lower_wick": 240.0, "lower_wick_ratio": 0.26966, "direction": "bearish", "body_type": "normal", "is_bodyfail_trigger": false }
+    ],
+    "events": [
+      { "symbol": "PIUSD", "timeframe": "M15", "trigger_time": "2026-09-08T00:00:00Z", "confirm_time": "2026-09-08T00:15:00Z", "direction_failed": "bullish", "trigger_body_ratio": 0.88000, "retracement_ratio": 0.50, "confidence": 0.928, "status": "confirmed" },
+      { "symbol": "BTCUSD", "timeframe": "H1", "trigger_time": "2026-09-08T00:00:00Z", "confirm_time": "2026-09-08T01:00:00Z", "direction_failed": "bullish", "trigger_body_ratio": 0.85135, "retracement_ratio": 0.92, "confidence": 0.911, "status": "confirmed" }
+    ]
+  }
+}

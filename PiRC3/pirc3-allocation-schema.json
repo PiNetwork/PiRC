@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://example.org/pirc3/allocation-schema.json",
+  "title": "PiRC3 Allocation Database Schema",
+  "description": "Schema for the PiRC3 data layer: allocation parameters, token/Pi splits, pool parameters, and participant tiers. Fill in all TBD/placeholder values before use.",
+  "type": "object",
+  "required": ["schemaVersion", "allocationId", "totalSupply", "tokenSplits", "piSplits", "poolParameters", "participantTiers"],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "description": "Version of this schema, e.g. '1.0.0'",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "allocationId": {
+      "type": "string",
+      "description": "Unique identifier for this allocation design/round"
+    },
+    "totalSupply": {
+      "type": "number",
+      "exclusiveMinimum": 0,
+      "description": "Total token supply being allocated in this round"
+    },
+    "tokenSplits": {
+      "type": "array",
+      "description": "How totalSupply is divided across categories (team, community, liquidity, treasury, etc.)",
+      "items": {
+        "type": "object",
+        "required": ["category", "percentage"],
+        "properties": {
+          "category": { "type": "string" },
+          "percentage": { "type": "number", "minimum": 0, "maximum": 100 },
+          "lockupMonths": { "type": "number", "minimum": 0, "default": 0 },
+          "vestingMonths": { "type": "number", "minimum": 0, "default": 0 }
+        }
+      },
+      "minItems": 1
+    },
+    "piSplits": {
+      "type": "array",
+      "description": "How the Pi (or other reserve-side contribution asset) side is divided across uses (liquidity pool, reserve, fees, etc.)",
+      "items": {
+        "type": "object",
+        "required": ["category", "percentage"],
+        "properties": {
+          "category": { "type": "string" },
+          "percentage": { "type": "number", "minimum": 0, "maximum": 100 }
+        }
+      },
+      "minItems": 1
+    },
+    "poolParameters": {
+      "type": "object",
+      "description": "Parameters for the AMM / liquidity pool used in allocation pricing",
+      "required": ["listingPrice", "reserveRatio", "swapFeeBps"],
+      "properties": {
+        "listingPrice": { "type": "number", "exclusiveMinimum": 0 },
+        "reserveRatio": { "type": "number", "exclusiveMinimum": 0, "maximum": 1, "description": "e.g. 0.5 for a 50/50 constant-product pool" },
+        "swapFeeBps": { "type": "integer", "minimum": 0, "description": "Swap fee in basis points (100 = 1%)" }
+      }
+    },
+    "participantTiers": {
+      "type": "array",
+      "description": "Tiers determining discounts/allocation caps based on an engagement or contribution score",
+      "items": {
+        "type": "object",
+        "required": ["tierName", "minScore", "discountPercent"],
+        "properties": {
+          "tierName": { "type": "string" },
+          "minScore": { "type": "number", "minimum": 0 },
+          "discountPercent": { "type": "number", "minimum": 0, "maximum": 100 },
+          "allocationCap": { "type": "number", "minimum": 0, "description": "Optional max token amount for this tier" }
+        }
+      },
+      "minItems": 1
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Free-form notes, authorship, last-updated date",
+      "properties": {
+        "lastUpdated": { "type": "string", "format": "date" },
+        "notes": { "type": "string" }
+      }
+    }
+  },
+  "additionalProperties": false
+}

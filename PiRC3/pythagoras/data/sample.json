@@ -1,0 +1,24 @@
+{
+  "calculations": [
+    {
+      "id": 1,
+      "raw_value": 314158.4159,
+      "rounded_value": 314158.42,
+      "decimal_places": 2,
+      "source": "python",
+      "created_at": "2026-10-15T09:00:00Z"
+    },
+    {
+      "id": 2,
+      "raw_value": 99.995,
+      "rounded_value": 100.0,
+      "decimal_places": 2,
+      "source": "node",
+      "created_at": "2026-10-15T09:05:00Z"
+    }
+  ],
+  "settings": {
+    "default_decimal_places": 2,
+    "timezone": "UTC"
+  }
+}

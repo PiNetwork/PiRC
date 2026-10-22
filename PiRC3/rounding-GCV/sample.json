@@ -1,0 +1,23 @@
+[
+  {
+    "wallet_id": "wallet_000001",
+    "raw_balance": "3.1415926535",
+    "decimals": 6,
+    "rounded_balance": "3.141593",
+    "rounding_mode": "nearest"
+  },
+  {
+    "wallet_id": "wallet_000002",
+    "raw_balance": "0.0000005",
+    "decimals": 6,
+    "rounded_balance": "0.000001",
+    "rounding_mode": "nearest"
+  },
+  {
+    "wallet_id": "wallet_owner",
+    "raw_balance": "999.9999995",
+    "decimals": 6,
+    "rounded_balance": "1000",
+    "rounding_mode": "nearest"
+  }
+]
