@@ -1,6 +1,8 @@
 # PiRC2: Subscription Contract API (Pi Request for Comment)
 
-This document specifies the Subscription Contract API — a Soroban smart contract that manages recurring payment subscriptions on the Pi Network. It defines how merchants register services with configurable pricing and billing periods, how subscribers can subscribe with or without upfront commitment, and how merchants process periodic charges via pre-approved token allowances.
+This document specifies the Subscription Contract API: a Soroban smart contract that runs recurring payment subscriptions on Pi Network. It defines how merchants register services with a fixed price and billing period, how subscribers set a budget for a subscription without sending funds anywhere, and how merchants collect each period's payment from that budget.
+
+This version replaces the earlier PiRC2 draft completely. The earlier draft described a contract with `pay_upfront`, `toggle_pay_upfront`, `process(merchant, service_id)` and subscription lists stored on-chain. That design is deprecated. See [1.4 What changed](1-introduction.md#14-what-changed-from-the-earlier-draft).
 
 Community feedback is welcome. Pioneers are encouraged to review, comment, and share specific suggestions through GitHub Issues, discussions, or Pull Requests.
 
@@ -15,3 +17,4 @@ Community feedback is welcome. Pioneers are encouraged to review, comment, and s
   - [`7-query-methods`](7-query-methods.md)
   - [`8-admin-methods`](8-admin-methods.md)
   - [`9-subscription-setup-guide`](9-subscription-setup-guide.md)
+  - [`10-security-considerations`](10-security-considerations.md)
