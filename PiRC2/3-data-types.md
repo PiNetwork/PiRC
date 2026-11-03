@@ -16,7 +16,7 @@ Rules for later versions:
 
 - A published variant's struct is frozen. A new field means a new variant (`V2`).
 - Reads accept every variant. A record is saved in the newest form the next time it is written.
-- Enum variants (`ServiceState`, `SubStatus`, `ChargeOutcome`, `EndReason`) and error codes are append-only (`ApprovalLost` was appended to `ChargeOutcome` and `EndReason`): never renamed, removed or changed.
+- Enum variants (`ServiceState`, `SubStatus`, `ChargeOutcome`, `EndReason`) and error codes are append-only: never renamed, removed or changed.
 - Public read methods return view structs (3.3), never the stored record. New data gets a new method; existing signatures never change.
 - Event payloads are maps (structs), so new fields can be added as new keys.
 
@@ -70,7 +70,7 @@ Stored at `Pool(subscriber)` as `PoolRecord::V1`.
 
 The Pool is rewritten only when `live` changes. A successful charge never changes it. When `live` becomes empty, the key is removed instead of storing an empty list.
 
-Being in the Pool is what lets a subscription be charged. A subscription dropped by the approval gate ([6.6](6-subscription-lifecycle.md#66-keeping-the-allowance-in-sync)) keeps its `reserved`, but cannot be charged until `extend` puts it back.
+Ids leave the Pool only when the subscription has ended, or when it is cancelled. Every live subscription with budget is in its subscriber's Pool. `process` charges only Pool members, as a backstop.
 
 #### `PendingUpgrade`
 
@@ -123,7 +123,7 @@ Read methods return these. They are never stored.
 | `paid_periods` | `u32` | As stored |
 | `status` | `SubStatus` | Derived at read time from the stored fields, the service and the clock |
 
-`status` does not look at the token or the Pool. A subscription dropped by the approval gate can read `Paid` or `Due` while it cannot be charged. To know whether the next charge can land, also check that the id is in `get_pool(subscriber).live` and read the token's allowance entry (`["Allowance", {from, spender}]` → `{amount, live_until_ledger}`) for its amount and expiry.
+`status` does not look at the token. A `Due` subscription whose allowance has expired or been revoked still reads `Due`; its charge returns `ApprovalLost` until the subscriber signs any call. To know whether the next charge can land, read the token's allowance entry (`["Allowance", {from, spender}]` → `{amount, live_until_ledger}`) for its amount and expiry.
 
 #### `ServiceView`
 
@@ -163,7 +163,7 @@ Read methods return these. They are never stored.
 | `Exhausted` | `reserved < price` | id dropped |
 | `Ended` | Service is `Inactive` (id dropped), or the id is not in the Pool, or the `sub_id` does not exist (nothing to drop) | see meaning |
 | `ChargeFailed` | The allowance is not 0, but the token refused `transfer_from` (low balance, or an allowance lowered below the price). Nothing changes; the subscription stays `Due` and can be retried until its window closes. | unchanged |
-| `ApprovalLost` | The token allowance is 0 (expired or revoked). The subscription record is unchanged; it cannot be charged until the subscriber calls `extend`. | id dropped |
+| `ApprovalLost` | The token allowance is 0 (expired or revoked). Nothing changes; the subscription stays `Due` and can be retried until its window closes. Any call the subscriber signs re-approves the live sum, so a later retry can succeed. | unchanged |
 
 #### `ItemResult`
 
@@ -188,7 +188,6 @@ Every event payload is a struct (a map), except `upgrade` and `admin`, which are
 | `sub_cncl` | `[sub_cncl, subscriber]` | `cancel`, only when it releases budget | `SubEvent` |
 | `charged` | `[charged, subscriber]` | `process`, on each successful charge | `ChargedEvent` |
 | `sub_end` | `[sub_end, subscriber]` | `process` only, when it actually removes an id from the Pool | `SubEndEvent` |
-| `approval_lost` | `[approval_lost, subscriber]` | A subscriber-signed call whose approval gate dropped the Pool; one event per call | `ApprovalLostEvent` |
 | `approval` | `[approval, subscriber]` | Every subscriber-signed call (`subscribe`, `extend`, `cancel`, `refresh_approval`) | `ApprovalEvent` |
 | `low_bal` | `[low_bal, subscriber]` | `process`, after a charge, when the balance is below `price` | `LowFundsEvent` |
 | `low_alw` | `[low_alw, subscriber]` | `process`, after a charge, when the allowance is below `price` | `LowFundsEvent` |
@@ -205,7 +204,6 @@ Payload structs:
 | `SubEvent` | `sub_id: u64`, `service_id: u64`, `amount: i128`, `period_end_ts: u64`, `reserved: i128`, `paid_periods: u32` |
 | `ChargedEvent` | `sub_id: u64`, `service_id: u64`, `amount: i128`, `period_end_ts: u64`, `reserved: i128`, `paid_periods: u32` |
 | `SubEndEvent` | `sub_id: u64`, `service_id: u64`, `reason: EndReason`, `period_end_ts: u64`, `reserved: i128`, `paid_periods: u32` |
-| `ApprovalLostEvent` | `sub_ids: Vec<u64>`: every id that was in the Pool, ended ones included |
 | `ApprovalEvent` | `amount: i128`, `expiration_ledger: u32`, `live: Vec<u64>` |
 | `LowFundsEvent` | `sub_id: u64`, `available: i128` |
 
@@ -217,8 +215,6 @@ Field notes:
 - `ApprovalEvent` mirrors the `approve` just made: amount, expiration ledger (0 on revoke) and the live ids.
 - `LowFundsEvent.available` is the token balance (`low_bal`) or the allowance (`low_alw`) after the charge. The allowance is read once per subscriber per `process` call and lowered by each charge in that call. The `charged` event just before it carries the full resulting state.
 
-The `approval_lost` topic is a 13-character symbol, longer than the 9-character short-symbol limit; it encodes as an ordinary `Symbol` for decoders.
-
 `low_bal`, `low_alw` and `charged` are kept small so that a worst-case batch of 15 charges stays under Pi Testnet's 16,384-byte event limit.
 
 #### `EndReason` (enum, append-only)
@@ -229,8 +225,7 @@ The `approval_lost` topic is a 13-character symbol, longer than the 9-character 
 | `Exhausted` | `process` found `reserved < price` |
 | `ChargeFailed` | Reserved. Not emitted: a failed charge does not end or drop a subscription. |
 | `ServiceInactive` | `process` found the service `Inactive` |
-| `ApprovalLost` | `process` found the token allowance at 0 |
 
-Why a subscription ended is never stored. It comes from these events. Subscriptions that end without a `process` call (for example, cancelled ones) emit no `sub_end`; `sync_pool` drops them silently. When the approval gate in a signed call drops the Pool, the call emits one `approval_lost` instead of one `sub_end` per id.
+Why a subscription ended is never stored. It comes from these events. Subscriptions that end without a `process` call (for example, cancelled ones) emit no `sub_end`; `sync_pool` drops them silently.
 
 Next: [`4-Error-Codes`](4-error-codes.md)

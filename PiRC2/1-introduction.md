@@ -42,7 +42,7 @@ The contract in this version is a new deployment. It does not upgrade or migrate
 | `approve_periods` set by the merchant on the service | The subscriber picks `periods` at `subscribe` and can add more with `extend` |
 | `process(merchant, service_id)` walks a stored list | `process(caller, service_id, items)` takes explicit `sub_id`s, each with the `expected_period_end` it expects; at most 15 per call |
 | Only the merchant can bill | The merchant or a process-only executor key can bill |
-| Allowance only ever added to | Allowance **set** to the live sum on every subscriber signature, expiring at the live horizon |
+| Allowance only ever added to | Allowance **set** to the live sum on every subscriber signature, expiring shortly after the live horizon |
 | Subscription and service lists on-chain; `get_subscriber_subs`, `get_merchant_subs`, `get_merchant_services` | No lists on-chain except each subscriber's small `Pool` of live ids |
 | `name`, `is_active`, `created_at`, `next_charge_ts`, `service_end_ts`, price copied into each subscription | Service holds only its terms and `state`; subscription holds `period_end_ts`, `reserved`, `paid_periods` |
 | Service `is_active` | `state`: `Open`, `SignupsClosed` or `Inactive` (final) |

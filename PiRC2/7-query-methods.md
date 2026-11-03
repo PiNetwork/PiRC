@@ -20,7 +20,7 @@ Notes:
 
 - `get_active_sub` returns the most recent subscription for the pair, whether or not it has ended. Read it with `get_subscription` and check `status`. An app can use it to find the existing subscription after `AlreadySubscribed`.
 - `get_pool` filters ended ids at read time. The stored Pool may still hold them until the subscriber's next signed call.
-- `status` depends on the current time. Do not cache it for long. It does not reflect the Pool or the token allowance: a subscription dropped by the approval gate can still read `Paid` or `Due` ([3.3](3-data-types.md#33-views)).
+- `status` depends on the current time. Do not cache it for long. It does not reflect the token allowance: a subscription whose allowance expired or was revoked can still read `Due` ([3.3](3-data-types.md#33-views)).
 - Read methods do not call the token. To see the allowance amount and expiry, read the token's own allowance entry (`["Allowance", {from: subscriber, spender: contract}]` → `{amount, live_until_ledger}`), or call the token's `allowance(from, spender)` for the amount.
 - Entries that have been archived on the network are still returned by reads and simulations ([10.4](10-security-considerations.md#104-storage-expiry)).
 - Payment history and the reason a subscription ended are not stored. They come from the contract's events in the chain's transaction history ([3.5](3-data-types.md#35-events)).

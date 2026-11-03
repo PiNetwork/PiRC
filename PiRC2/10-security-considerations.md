@@ -26,7 +26,6 @@ Review checklist for the implementation:
 | A charge never exceeds the subscription's `reserved` | Contract |
 | At most one charge per period, only inside the window `[period_end_ts, period_end_ts + period_secs)` | Contract |
 | Charges only on subscriptions in the subscriber's Pool, of a non-`Inactive` service, paid to `service.merchant` | Contract |
-| No charge while the allowance is 0 (expired or revoked) until the subscriber signs `extend` again | Contract (approval gate) |
 | One live subscription per (subscriber, service); one trial per (subscriber, service) | Contract |
 | Sign-ups only on `Open` services | Contract |
 | Only the merchant or its executor can call `process` | Contract |
@@ -63,7 +62,7 @@ How the contract manages it:
 
 | Entry | Storage | When it expires | Recoverable? |
 |---|---|---|---|
-| Token allowance | temporary | At its expiration ledger: at most about 180 days after the last approve | **No.** It is deleted. Only the subscriber can set a new one, with any signed call (`refresh_approval` is the simplest). If it lapses, the allowance reads 0: the approval gate drops each subscription from the Pool (`ApprovalLost`), and each comes back only through `extend`. |
+| Token allowance | temporary | At its expiration ledger: at most about 180 days after the last approve | **No.** It is deleted. Only the subscriber can set a new one, with any signed call (`refresh_approval` is the simplest). If it lapses while a subscription is still live, that subscription's charges return `ApprovalLost` (nothing changes, retried) until the subscriber's next signed call re-approves the live sum. |
 | `Sub`, `Service`, `Pool` of a live subscription | persistent | Kept live by charges and writes | Yes |
 | An ended subscription's entries, `ActiveSub`, `TrialUsed` | persistent | Archive after their TTL | Yes |
 | Contract instance and code | instance / code | If nobody extends them | Yes |
@@ -78,7 +77,7 @@ A subscriber can call the token's `approve` directly, outside this contract.
 
 | Edit | Effect |
 |---|---|
-| Revoke (set to 0) | The approval gate fires. Each charge returns `ApprovalLost` and drops that id; the next signed call drops the whole Pool and emits `approval_lost`. Each subscription comes back only through `extend`. |
+| Revoke (set to 0) | Each charge returns `ApprovalLost`. Nothing changes and the subscriptions stay in the Pool; they are retried until their windows close, then become `Stale`. The next signed call re-approves the live sum. |
 | Lower, but not to 0 | Charges that need more than is left fail with `ChargeFailed`. The subscriptions stay `Due` and are retried until their windows close, then become `Stale`. |
 | Raise | No effect on what can be charged: each subscription still takes at most its `reserved`, one price per period |
 
@@ -102,7 +101,7 @@ The merchant key is more powerful: it can change service state and set the execu
 - `cancel` needs only the subscriber's signature. A subscriber can always stop future charges.
 - Service terms never change after sign-up. A merchant cannot raise the price on existing subscribers.
 - Total charges never exceed the budget the subscriber approved (`price × periods`, plus any `extend`).
-- A subscriber can also revoke the allowance in the token directly at any time. A revoked or expired allowance stops all charges for that subscriber, even after a later re-approval elsewhere, until the subscriber signs `extend` for each subscription to keep.
+- A subscriber can also revoke the allowance in the token directly at any time. A revoked or expired allowance stops all charges for that subscriber (`ApprovalLost`) until the subscriber signs any call on this contract, which re-approves the live sum. `cancel` stops a subscription for good.
 
 ### 10.8 Upgrades
 

@@ -33,7 +33,7 @@ Anyone can call the read methods.
 
 **Reserved budget.** Each subscription has `reserved`: the approved budget it can still spend, always a whole number of prices. `subscribe` and `extend` add `price × periods`. Each charge takes one `price`. `cancel` sets it to 0. A subscription renews only while `reserved >= price`. The first payment at `subscribe` is a direct transfer and does not come from `reserved`.
 
-**Pool and allowance sync.** The Pi token holds one allowance per (subscriber, contract), and only the subscriber's signature can change it. Each subscriber has a `Pool`: the ids of their subscriptions that can still be charged, at most 50. Every call the subscriber signs drops ended ids from the Pool, then **sets** the allowance to the sum of the remaining budgets, expiring shortly after the last of them would run out. If the allowance has dropped to 0 (expired or revoked), the call instead drops every id from the Pool (the approval gate), and each subscription comes back only through `extend`. Being in the Pool is what lets a subscription be charged. Between signatures the allowance can be larger than the live budgets need. That leftover cannot be spent. Details in [6.6](6-subscription-lifecycle.md#66-keeping-the-allowance-in-sync).
+**Pool and allowance sync.** The Pi token holds one allowance per (subscriber, contract), and only the subscriber's signature can change it. Each subscriber has a `Pool`: the ids of their subscriptions that can still be charged, at most 50. Every call the subscriber signs drops ended ids from the Pool, then **sets** the allowance to the sum of the remaining budgets, expiring shortly after the last of them would run out. Live subscriptions always stay in the Pool, so if the allowance has expired or been revoked, the subscriber's next signed call (for example `refresh_approval`) approves them again. Until then their charges return `ApprovalLost` and are retried. Between signatures the allowance can be larger than the live budgets need. That leftover cannot be spent. Details in [6.6](6-subscription-lifecycle.md#66-keeping-the-allowance-in-sync).
 
 **Explicit billing.** `process` takes up to 15 items, each a `sub_id` with the `period_end_ts` the caller expects. If that value has already moved, the item is skipped. So a retried or duplicated batch charges nothing twice.
 
@@ -53,21 +53,21 @@ flowchart TD
   C -- no --> E2[ServiceNotOpen]
   C -- yes --> D{ActiveSub points to<br/>a sub that has not ended?}
   D -- yes --> E3[AlreadySubscribed]
-  D -- no --> F[sync_pool]
+  D -- no --> F[sync_pool<br/>drop ended ids]
   F --> G{Pool has fewer<br/>than 50 ids?}
   G -- no --> E4[PoolFull]
-  G -- yes --> RS["reserved = price × periods"]
+  G -- yes --> RS["reserved = price × periods<br/>(AmountOverflow)"]
   RS --> H{claim_trial and<br/>trial_period_secs > 0?}
   H -- yes --> I{TrialUsed set?}
   I -- no --> T["Trial<br/>period_end_ts = now + trial_period_secs<br/>paid_periods = 0<br/>set TrialUsed"]
   I -- yes --> P
-  H -- no --> P["First payment<br/>transfer price: subscriber to merchant<br/>period_end_ts = now + period_secs<br/>paid_periods = 1"]
-  T --> R["save sub, set ActiveSub<br/>add sub_id to Pool"]
+  H -- no --> P["First payment<br/>token.transfer price: subscriber to merchant<br/>period_end_ts = now + period_secs<br/>paid_periods = 1"]
+  T --> R["save Sub, set ActiveSub<br/>add sub_id to Pool<br/>event sub_new"]
   P --> R
-  R --> AP["approve: set allowance to live sum<br/>event sub_new<br/>return sub_id"]
+  R --> AP["token.approve: set allowance to live sum<br/>event approval<br/>return sub_id"]
 ```
 
-`TrialUsed` is read only when `claim_trial` is true and the service has a trial.
+`TrialUsed` is read only when `claim_trial` is true and the service has a trial. `period_end_ts` is checked for `TimestampOverflow`. If the first payment fails (for example, low balance), the whole call fails and nothing is written.
 
 ### 2.4 Process: the charge rule
 
@@ -90,19 +90,21 @@ flowchart TD
   S1 -- yes --> S2{now < period_end_ts?}
   S2 -- yes --> O2[NotDue]
   S2 -- no --> S3{now >= period_end_ts + period_secs?}
-  S3 -- yes --> O3[Stale<br/>drop from Pool]
+  S3 -- yes --> O3[Stale<br/>drop from Pool, sub_end Stale]
   S3 -- no --> S4{reserved < price?}
-  S4 -- yes --> O4[Exhausted<br/>drop from Pool]
+  S4 -- yes --> O4[Exhausted<br/>drop from Pool, sub_end Exhausted]
   S4 -- no --> S5{service Inactive?}
-  S5 -- yes --> O5[Ended<br/>drop from Pool]
+  S5 -- yes --> O5[Ended<br/>drop from Pool, sub_end ServiceInactive]
   S5 -- no --> S5b{id in Pool?}
-  S5b -- no --> O5b[Ended]
+  S5b -- no --> O5b[Ended<br/>no change]
   S5b -- yes --> S5c{allowance == 0?}
-  S5c -- yes --> O5c[ApprovalLost<br/>drop from Pool]
-  S5c -- no --> S6{transfer_from succeeds?}
+  S5c -- yes --> O5c[ApprovalLost<br/>no change, retried later]
+  S5c -- no --> S6{try_transfer_from succeeds?}
   S6 -- no --> O6[ChargeFailed<br/>no change, retried later]
-  S6 -- yes --> O7["Charged<br/>period_end_ts += period_secs<br/>reserved -= price<br/>paid_periods += 1"]
+  S6 -- yes --> O7["Charged<br/>period_end_ts += period_secs<br/>reserved -= price<br/>paid_periods += 1<br/>event charged, maybe low_bal / low_alw"]
 ```
+
+`sub_end` is emitted only when the id was actually in the Pool. The allowance is read once per subscriber per call and lowered by each charge in that call.
 
 ### 2.5 Status
 
@@ -117,7 +119,7 @@ flowchart TD
   D -- no --> EN[Ended]
 ```
 
-`Trial`, `Paid` and `Due` count as active. `Ended` is final: an ended subscription is never charged or extended again. To continue, the subscriber subscribes again. `status` is computed from the stored fields only: a subscription dropped from the Pool by the approval gate can still read `Paid` or `Due`, but it is not charged until `extend` puts it back. A cancelled subscription is not ended until its `period_end_ts`, and `extend` before then undoes the cancel.
+`Trial`, `Paid` and `Due` count as active. `Ended` is final: an ended subscription is never charged or extended again. To continue, the subscriber subscribes again. `status` is computed from the stored fields and the clock; it does not read the token allowance. A cancelled subscription is not ended until its `period_end_ts`, and `extend` before then undoes the cancel.
 
 ### 2.6 Security
 

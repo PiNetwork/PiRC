@@ -62,14 +62,17 @@ Amounts are in the token's smallest unit. Pi has 7 decimal places: `10000000` = 
 ### 9.2 Typical flow
 
 ```
-1. Merchant:   register_service                   -> service_id
-2. Merchant:   set_executor (optional)
-3. Subscriber: subscribe(periods, claim_trial)    -> sub_id
-               (trial, or first payment now; allowance set to the live sum)
-4. Billing:    get_subscription -> period_end_ts
-               process([{sub_id, expected_period_end}]) once the window opens
-5. Subscriber: extend to add periods, refresh_approval to renew the allowance
-6. Subscriber: cancel at any time; access lasts to period_end_ts
+1. Merchant:   register_service(merchant, price, period_secs, trial_period_secs)  -> service_id
+2. Merchant:   set_executor(merchant, service_id, executor)                       (optional)
+3. Subscriber: subscribe(subscriber, service_id, periods, claim_trial)            -> sub_id
+               trial, or first payment now; allowance set to the live sum
+4. Billing:    get_subscription(sub_id)                                           -> period_end_ts
+               once period_end_ts has passed (status Due):
+               process(caller, service_id, [{sub_id, expected_period_end}])       -> [{sub_id, outcome}]
+5. Subscriber: extend(subscriber, sub_id, periods, expected_period_end)           add periods
+               refresh_approval(subscriber)                                       renew or restore the allowance
+6. Subscriber: cancel(subscriber, sub_id)                                         no more charges;
+                                                                                  access lasts to period_end_ts
 ```
 
 ### 9.3 Deploy your own copy (optional)
@@ -169,7 +172,7 @@ stellar contract invoke --id $CONTRACT_ID --network $NETWORK --source subscriber
   -- has_used_trial --subscriber $SUBSCRIBER --service_id 0
 ```
 
-**Extend** by 6 periods. Pass the current `period_end_ts` from `get_subscription`. Only a subscription that has not ended can be extended. `--periods 0` only re-approves, and puts the subscription back in the Pool if the approval gate dropped it.
+**Extend** by 6 periods. Pass the current `period_end_ts` from `get_subscription`. Only a subscription that has not ended can be extended. `--periods 0` only re-approves (and puts a cancelled subscription that is still inside its period back in the Pool).
 
 ```bash
 stellar contract invoke \
@@ -238,7 +241,7 @@ The result lists one outcome per item, for example:
 [{"sub_id":0,"outcome":"Charged"},{"sub_id":1,"outcome":"NotDue"}]
 ```
 
-Running the same command again returns `AlreadyHandled` for item 0 and charges nothing. An item that returns `ChargeFailed` is unchanged: send it again in a later run, with the same `expected_period_end`, until its window closes. An item that returns `ApprovalLost` has been dropped because the subscriber's allowance is 0; it is charged again only after the subscriber calls `extend`. See [6.5](6-subscription-lifecycle.md#65-process-batch-charge) for every outcome.
+Running the same command again returns `AlreadyHandled` for item 0 and charges nothing. An item that returns `ChargeFailed` is unchanged: send it again in a later run, with the same `expected_period_end`, until its window closes. An item that returns `ApprovalLost` is also unchanged: the subscriber's allowance is 0 (expired or revoked). Retry it after the subscriber signs any call, such as `refresh_approval`, which re-approves the live sum. See [6.5](6-subscription-lifecycle.md#65-process-batch-charge) for every outcome.
 
 ### 9.7 Reads
 
@@ -297,6 +300,7 @@ stellar contract invoke --id $TOKEN_ID --network $NETWORK --source subscriber \
 | `TooManyIds` (22) | `get_subscriptions` with more than 50 ids | Split the read |
 | `NotProcessExecutor` (10) | `process` from a key that is neither merchant nor executor | Use the merchant key or set the executor |
 | `ProcessLimitTooHigh` (13) | More than 15 items | Split the batch |
+| Host auth error on a signed call | The approve expiry crossed a 720-ledger bucket between simulation and execution ([10.10](10-security-considerations.md#1010-known-limitation-approve-expiry-mismatch)) | Simulate again, sign again, resubmit |
 
 The full list is in [4. Error Codes](4-error-codes.md).
 
