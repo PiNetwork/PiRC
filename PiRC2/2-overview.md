@@ -33,7 +33,16 @@ Anyone can call the read methods.
 
 **Reserved budget.** Each subscription has `reserved`: the approved budget it can still spend, always a whole number of prices. `subscribe` and `extend` add `price × periods`. Each charge takes one `price`. `cancel` sets it to 0. A subscription renews only while `reserved >= price`. The first payment at `subscribe` is a direct transfer and does not come from `reserved`.
 
-**Pool and allowance sync.** The Pi token holds one allowance per (subscriber, contract), and only the subscriber's signature can change it. Each subscriber has a `Pool`: the ids of their subscriptions that can still be charged, at most 50. Every call the subscriber signs drops ended ids from the Pool, then **sets** the allowance to the sum of the remaining budgets, expiring shortly after the last of them would run out. Live subscriptions always stay in the Pool, so if the allowance has expired or been revoked, the subscriber's next signed call (for example `refresh_approval`) approves them again. Until then their charges return `ApprovalLost` and are retried. Between signatures the allowance can be larger than the live budgets need. That leftover cannot be spent. Details in [6.6](6-subscription-lifecycle.md#66-keeping-the-allowance-in-sync).
+**Allowance summary and day buckets.** The Pi token holds one allowance per (subscriber, contract), and only the subscriber's signature can change it. The contract keeps, per wallet:
+
+- an `Allowance` record with `total`, the sum of the budgets that can still be charged;
+- day buckets `Bkt(subscriber, day)`. Each subscription with budget left sits in the bucket of the UTC day its current charge window closes.
+
+A charge moves the subscription to the next period's bucket at once. So an item still in a bucket after its day has passed belongs to a subscription that was not charged in its window, which has ended.
+
+Every call the subscriber signs starts with **cleanup**: it releases whole past days (up to 40 pages per call) without reading any subscription. It then **sets** the allowance to `total`. Between signatures the allowance can be higher than needed; it is never lower. That extra amount cannot be spent. Details in [6.6](6-subscription-lifecycle.md#66-cleanup) and [6.7](6-subscription-lifecycle.md#67-keeping-the-allowance-in-sync).
+
+**Wallet index.** `WalletSubs(subscriber, page)` lists every `sub_id` a wallet ever created, 50 per page, including subscriptions created by calling the contract directly. It is append-only.
 
 **Explicit billing.** `process` takes up to 15 items, each a `sub_id` with the `period_end_ts` the caller expects. If that value has already moved, the item is skipped. So a retried or duplicated batch charges nothing twice.
 
@@ -47,27 +56,29 @@ Anyone can call the read methods.
 
 ```mermaid
 flowchart TD
-  A[subscribe<br/>subscriber, service_id, periods, claim_trial] --> B{Service exists?}
+  A[subscribe<br/>subscriber, service_id, periods, claim_trial] --> CL["cleanup<br/>release past day buckets (max 40)"]
+  CL --> B{Service exists?}
   B -- no --> E1[ServiceNotFound]
   B -- yes --> C{state == Open?}
   C -- no --> E2[ServiceNotOpen]
   C -- yes --> D{ActiveSub points to<br/>a sub that has not ended?}
   D -- yes --> E3[AlreadySubscribed]
-  D -- no --> F[sync_pool<br/>drop ended ids]
-  F --> G{Pool has fewer<br/>than 50 ids?}
-  G -- no --> E4[PoolFull]
-  G -- yes --> RS["reserved = price × periods<br/>(AmountOverflow)"]
+  D -- no --> RS["reserved = price × periods<br/>(AmountOverflow)"]
   RS --> H{claim_trial and<br/>trial_period_secs > 0?}
   H -- yes --> I{TrialUsed set?}
   I -- no --> T["Trial<br/>period_end_ts = now + trial_period_secs<br/>paid_periods = 0<br/>set TrialUsed"]
   I -- yes --> P
   H -- no --> P["First payment<br/>token.transfer price: subscriber to merchant<br/>period_end_ts = now + period_secs<br/>paid_periods = 1"]
-  T --> R["save Sub, set ActiveSub<br/>add sub_id to Pool<br/>event sub_new"]
+  T --> R["save Sub, set ActiveSub<br/>append sub_id to WalletSubs"]
   P --> R
-  R --> AP["token.approve: set allowance to live sum<br/>event approval<br/>return sub_id"]
+  R --> K{amount > 0?}
+  K -- yes --> BK["add (sub_id, amount) to<br/>Bkt(subscriber, day(deadline))<br/>total += amount, raise max_close"]
+  K -- no --> EV
+  BK --> EV[event sub_new]
+  EV --> AP["token.approve(total, expiry from max_close)<br/>event approval<br/>return SubscribeResult"]
 ```
 
-`TrialUsed` is read only when `claim_trial` is true and the service has a trial. `period_end_ts` is checked for `TimestampOverflow`. If the first payment fails (for example, low balance), the whole call fails and nothing is written.
+`deadline = period_end_ts + period_secs`. `TrialUsed` is read only when `claim_trial` is true and the service has a trial. `period_end_ts` is checked for `TimestampOverflow`. If the first payment fails (for example, low balance), the whole call fails and nothing is written, including the cleanup.
 
 ### 2.4 Process: the charge rule
 
@@ -86,27 +97,38 @@ flowchart TD
   L --> S0{sub exists?}
   S0 -- no --> O0[Ended]
   S0 -- yes --> S1{sub.service_id matches and<br/>period_end_ts == expected_period_end?}
-  S1 -- no --> O1[AlreadyHandled<br/>no change]
+  S1 -- no --> O1[AlreadyHandled]
   S1 -- yes --> S2{now < period_end_ts?}
   S2 -- yes --> O2[NotDue]
   S2 -- no --> S3{now >= period_end_ts + period_secs?}
-  S3 -- yes --> O3[Stale<br/>drop from Pool, sub_end Stale]
+  S3 -- yes --> O3[Stale]
   S3 -- no --> S4{reserved < price?}
-  S4 -- yes --> O4[Exhausted<br/>drop from Pool, sub_end Exhausted]
+  S4 -- yes --> O4[Exhausted]
   S4 -- no --> S5{service Inactive?}
-  S5 -- yes --> O5[Ended<br/>drop from Pool, sub_end ServiceInactive]
-  S5 -- no --> S5b{id in Pool?}
-  S5b -- no --> O5b[Ended<br/>no change]
+  S5 -- yes --> O5[Ended]
+  S5 -- no --> S5b{"item in<br/>Bkt(subscriber, day(deadline))?"}
+  S5b -- no --> O5b[Ended]
   S5b -- yes --> S5c{allowance == 0?}
-  S5c -- yes --> O5c[ApprovalLost<br/>no change, retried later]
+  S5c -- yes --> O5c[ApprovalLost<br/>retried later]
   S5c -- no --> S6{try_transfer_from succeeds?}
-  S6 -- no --> O6[ChargeFailed<br/>no change, retried later]
-  S6 -- yes --> O7["Charged<br/>period_end_ts += period_secs<br/>reserved -= price<br/>paid_periods += 1<br/>event charged, maybe low_bal / low_alw"]
+  S6 -- no --> O6[ChargeFailed<br/>retried later]
+  S6 -- yes --> O7["Charged<br/>period_end_ts += period_secs<br/>reserved -= price, paid_periods += 1<br/>move item to next deadline's bucket<br/>total -= price<br/>event charged, maybe low_bal / low_alw"]
 ```
 
-`sub_end` is emitted only when the id was actually in the Pool. The allowance is read once per subscriber per call and lowered by each charge in that call.
+Every outcome other than `Charged` changes nothing. The allowance is read once per subscriber per call and lowered by each charge in that call.
 
-### 2.5 Status
+### 2.5 Day buckets over time
+
+One wallet with one 30-day subscription, 12 periods budgeted, that is charged once and then never again:
+
+```mermaid
+flowchart LR
+  S["subscribe on day 0, no trial<br/>deadline on day 60<br/>Bkt(w, 60): (id, 12 × price)<br/>total = 12 × price"] --> C["charge on day 30<br/>item moves to Bkt(w, 90)<br/>amount 11 × price<br/>total = 11 × price"]
+  C --> M["no charge in days 60–90<br/>window closes on day 90<br/>status Ended"]
+  M --> K["next signed call on day 91 or later<br/>cleanup releases Bkt(w, 90)<br/>total -= 11 × price<br/>approve(total)"]
+```
+
+### 2.6 Status
 
 ```mermaid
 flowchart TD
@@ -121,7 +143,7 @@ flowchart TD
 
 `Trial`, `Paid` and `Due` count as active. `Ended` is final: an ended subscription is never charged or extended again. To continue, the subscriber subscribes again. `status` is computed from the stored fields and the clock; it does not read the token allowance. A cancelled subscription is not ended until its `period_end_ts`, and `extend` before then undoes the cancel.
 
-### 2.6 Security
+### 2.7 Security
 
 See [`10-security-considerations`](10-security-considerations.md) for who can spend the allowance, what the token and the contract each enforce, storage expiry, executor keys and upgrades.
 

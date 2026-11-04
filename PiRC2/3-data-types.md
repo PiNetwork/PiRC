@@ -1,6 +1,6 @@
 ## 3. Data Types
 
-Amounts are `i128` in the token's smallest unit. Pi has 7 decimal places, so `10000000` = 1 Pi. Times are `u64` ledger timestamps in seconds. Where the contract converts time to ledgers, it uses 5 seconds per ledger, rounding up.
+Amounts are `i128` in the token's smallest unit. Pi has 7 decimal places, so `10000000` = 1 Pi. Times are `u64` ledger timestamps: Unix seconds, UTC. There are no time zones on-chain; only user interfaces convert. Where the contract converts time to ledgers, it uses 5 seconds per ledger, rounding up.
 
 ### 3.1 Versioned records
 
@@ -10,13 +10,16 @@ Every stored record is a versioned enum from the first release:
 |---|---|
 | `ServiceRecord` | `V1(ServiceV1)` |
 | `SubRecord` | `V1(SubV1)` |
-| `PoolRecord` | `V1(PoolV1)` |
+| `AllowanceRecord` | `V1(AllowanceV1)` |
+| `BucketRecord` | `V1(BucketV1)` |
+
+The wallet index (`WalletSubs` pages and `WalletSubCount`) holds plain values. It is append-only and its shape never changes.
 
 Rules for later versions:
 
 - A published variant's struct is frozen. A new field means a new variant (`V2`).
 - Reads accept every variant. A record is saved in the newest form the next time it is written.
-- Enum variants (`ServiceState`, `SubStatus`, `ChargeOutcome`, `EndReason`) and error codes are append-only: never renamed, removed or changed.
+- Enum variants (`ServiceState`, `SubStatus`, `ChargeOutcome`) and error codes are append-only: never renamed, removed or reused.
 - Public read methods return view structs (3.3), never the stored record. New data gets a new method; existing signatures never change.
 - Event payloads are maps (structs), so new fields can be added as new keys.
 
@@ -43,13 +46,13 @@ Stored at `Service(service_id)` as `ServiceRecord::V1`. Terms never change; only
 | `service_id` | `u64` | From the `NextServiceId` counter |
 | `merchant` | `Address` | Service owner; receives every charge |
 | `price` | `i128` | Amount charged per period (> 0) |
-| `period_secs` | `u64` | Billing period in seconds (> 0) |
-| `trial_period_secs` | `u64` | Free trial in seconds; 0 = no trial |
+| `period_secs` | `u64` | Billing period in seconds (> 0). No other limit. |
+| `trial_period_secs` | `u64` | Free trial in seconds; 0 = no trial. No limit. |
 | `state` | `ServiceState` | The only mutable field |
 
 #### `SubV1`
 
-Stored at `Sub(sub_id)` as `SubRecord::V1`. Price and period are read from the service, so the terms cannot change after the subscriber signs.
+Stored at `Sub(sub_id)` as `SubRecord::V1`. It is the only source of truth for a subscription. Price and period are read from the service, so the terms cannot change after the subscriber signs.
 
 | Field | Type | Description |
 |---|---|---|
@@ -60,17 +63,36 @@ Stored at `Sub(sub_id)` as `SubRecord::V1`. Price and period are read from the s
 | `reserved` | `i128` | Approved budget left; always a multiple of `price` |
 | `paid_periods` | `u32` | Number of periods paid; 0 during a free trial |
 
-#### `PoolV1`
+#### `AllowanceV1`
 
-Stored at `Pool(subscriber)` as `PoolRecord::V1`.
+Stored at `Allowance(subscriber)` as `AllowanceRecord::V1`. A small, fixed-size summary per wallet (about 150 bytes). It is deleted when `total` reaches 0.
 
 | Field | Type | Description |
 |---|---|---|
-| `live` | `Vec<u64>` | The subscriber's subscriptions that can still be charged, in ascending `sub_id`; at most 50 |
+| `total` | `i128` | Sum of the item amounts in all of the wallet's buckets. After every subscriber-signed call, the token allowance is set to this value. |
+| `clean_through` | `u32` | First day not yet cleaned. Bit 0 of `busy` is this day. |
+| `max_close` | `u64` | Latest `final_close` of any subscription added since `total` was last 0. Sets the approve expiry. |
+| `busy` | `BytesN<64>` | 512-bit bitmap. Bit `i` (byte `i >> 3`, mask `1 << (i & 7)`) is set if and only if `Bkt(subscriber, clean_through + i)` exists. |
+| `far_days` | `Vec<u32>` | Busy days at or beyond `clean_through + 512`, ascending. Rare: only for periods longer than about 512 days. |
 
-The Pool is rewritten only when `live` changes. A successful charge never changes it. When `live` becomes empty, the key is removed instead of storing an empty list.
+The bitmap means the contract never probes empty days.
 
-Ids leave the Pool only when the subscription has ended, or when it is cancelled. Every live subscription with budget is in its subscriber's Pool. `process` charges only Pool members, as a backstop.
+#### `BucketV1`
+
+Stored at `Bkt(subscriber, day)` as `BucketRecord::V1`.
+
+| Field | Type | Description |
+|---|---|---|
+| `items` | `Vec<(u64, i128)>` | `(sub_id, amount)` for each of the wallet's subscriptions whose **current** charge window closes on this UTC day. Order is not significant. |
+
+A bucket with no items does not exist. Size is about 180 bytes plus about 40 bytes per item. Soroban's 64 KB entry limit allows roughly 1,600 items for one wallet on one day.
+
+#### Wallet index
+
+| Key | Value | Description |
+|---|---|---|
+| `WalletSubs(subscriber, page: u32)` | `Vec<u64>` | Up to 50 sub ids per page, in creation order. Every subscription the wallet ever created, including ones created by calling the contract directly. Never removed. |
+| `WalletSubCount(subscriber)` | `u64` | Number of ids in `WalletSubs`. The last page is `count / 50`, rounded down. |
 
 #### `PendingUpgrade`
 
@@ -91,16 +113,32 @@ Ids leave the Pool only when the subscription has ended, or when it is cancelled
 | `NextSubId` | instance | `u64` | Id counter; starts at 0 |
 | `Service(u64)` | persistent | `ServiceRecord` | Service by `service_id` |
 | `Sub(u64)` | persistent | `SubRecord` | Subscription by `sub_id` |
-| `Pool(Address)` | persistent | `PoolRecord` | Live subscription ids per subscriber; removed when empty |
-| `ActiveSub(Address, u64)` | persistent | `u64` (`sub_id`) | Most recent subscription for (subscriber, service); read only by `subscribe` and `get_active_sub` |
+| `ActiveSub(Address, u64)` | persistent | `u64` (`sub_id`) | Most recent subscription for (subscriber, service); the duplicate guard |
 | `TrialUsed(Address, u64)` | persistent | `bool` (`true`) | Set once a trial is granted for (subscriber, service) |
 | `Executor(u64)` | persistent | `Address` | Optional process-only key for a service; removed when unset |
+| `Allowance(Address)` | persistent | `AllowanceRecord` | Per-wallet allowance summary; removed when `total` is 0 |
+| `Bkt(Address, u32)` | persistent | `BucketRecord` | Day bucket: (subscriber, day) |
+| `WalletSubs(Address, u32)` | persistent | `Vec<u64>` | Wallet index page: (subscriber, page) |
+| `WalletSubCount(Address)` | persistent | `u64` | Wallet index size |
 
 Not stored: status, end reason, names, per-service or per-merchant lists.
 
-### 3.3 Views
+#### Days, deadlines and amounts
 
-Read methods return these. They are never stored.
+| Term | Definition |
+|---|---|
+| `EPOCH` | `1,794,960,000` = 2026-11-18T00:00:00Z, which is day 0 |
+| `day(ts)` | `(ts − EPOCH) / 86,400`, rounded down. Times before `EPOCH` count as day 0. |
+| `today` | `day(now)` |
+| `deadline` | `period_end_ts + period_secs`: when the current charge window closes |
+| `amount` | `(reserved / price) × price`: the whole-price budget that can still be charged |
+| `final_close` | `deadline + (amount / price − 1) × period_secs`: the last window close if every charge lands (only when `amount > 0`) |
+
+Placement rule: every subscription with `amount > 0` has exactly one item, in `Bkt(subscriber, day(deadline))`. A subscription with `amount = 0` (no periods budgeted, cancelled, or used up) is in no bucket.
+
+### 3.3 Views and results
+
+Read methods and signed calls return these. They are never stored.
 
 #### `SubStatus` (enum, append-only)
 
@@ -136,12 +174,33 @@ Read methods return these. They are never stored.
 | `trial_period_secs` | `u64` |
 | `state` | `ServiceState` |
 
-#### `PoolView`
+#### `AllowanceView`
 
 | Field | Type | Description |
 |---|---|---|
-| `live` | `Vec<u64>` | The stored Pool with ended ids filtered out |
-| `live_sum` | `i128` | Sum of `(reserved / price) × price` over `live` |
+| `total` | `i128` | `Allowance.total`: what the next signed call will approve, before cleanup |
+| `clean_through_day` | `u32` | `Allowance.clean_through` |
+| `pending_days` | `u32` | Number of busy days before `today`: past buckets that the next signed call will clean (up to 40 per call) |
+| `max_close` | `u64` | `Allowance.max_close` |
+
+A wallet with no `Allowance` record reads as zeros, with `clean_through_day = today`.
+
+#### `CleanupReport`
+
+Returned by every subscriber-signed call, and emitted as the `cleanup` event when anything was cleaned.
+
+| Field | Type | Description |
+|---|---|---|
+| `days_cleared` | `u32` | Past day buckets released by this call (at most 40) |
+| `released` | `i128` | Amount removed from `total` |
+| `more` | `bool` | Past buckets are still left. The approval is higher than needed until they are cleaned. |
+
+#### `SubscribeResult`
+
+| Field | Type |
+|---|---|
+| `sub_id` | `u64` |
+| `cleanup` | `CleanupReport` |
 
 ### 3.4 Billing types
 
@@ -154,16 +213,18 @@ Read methods return these. They are never stored.
 
 #### `ChargeOutcome` (enum, append-only)
 
-| Variant | Meaning | Pool |
-|---|---|---|
-| `Charged` | One period paid | unchanged |
-| `NotDue` | `now < period_end_ts` | unchanged |
-| `AlreadyHandled` | `expected_period_end` or `service_id` does not match: already charged, or the wrong service | unchanged |
-| `Stale` | The window closed without a charge | id dropped |
-| `Exhausted` | `reserved < price` | id dropped |
-| `Ended` | Service is `Inactive` (id dropped), or the id is not in the Pool, or the `sub_id` does not exist (nothing to drop) | see meaning |
-| `ChargeFailed` | The allowance is not 0, but the token refused `transfer_from` (low balance, or an allowance lowered below the price). Nothing changes; the subscription stays `Due` and can be retried until its window closes. | unchanged |
-| `ApprovalLost` | The token allowance is 0 (expired or revoked). Nothing changes; the subscription stays `Due` and can be retried until its window closes. Any call the subscriber signs re-approves the live sum, so a later retry can succeed. | unchanged |
+Only `Charged` changes anything. Every other outcome leaves the subscription and the buckets as they were.
+
+| Variant | Meaning |
+|---|---|
+| `Charged` | One period paid. The subscription moves to its next day bucket. |
+| `NotDue` | `now < period_end_ts` |
+| `AlreadyHandled` | `expected_period_end` or `service_id` does not match: already charged, or the wrong service |
+| `Stale` | The window closed without a charge. The subscription has ended; cleanup releases its item. |
+| `Exhausted` | `reserved < price` |
+| `Ended` | The service is `Inactive`, or the subscription has no item in its deadline's bucket, or the `sub_id` does not exist |
+| `ChargeFailed` | The allowance is not 0, but the token refused `transfer_from` (low balance, or an allowance lowered below the price). The subscription stays `Due` and can be retried until its window closes. |
+| `ApprovalLost` | The token allowance is 0 (expired or revoked). The subscription stays `Due` and can be retried until its window closes. Any call the subscriber signs re-approves `total`, so a later retry can succeed. |
 
 #### `ItemResult`
 
@@ -187,7 +248,7 @@ Every event payload is a struct (a map), except `upgrade` and `admin`, which are
 | `sub_ext` | `[sub_ext, subscriber]` | `extend` | `SubEvent` |
 | `sub_cncl` | `[sub_cncl, subscriber]` | `cancel`, only when it releases budget | `SubEvent` |
 | `charged` | `[charged, subscriber]` | `process`, on each successful charge | `ChargedEvent` |
-| `sub_end` | `[sub_end, subscriber]` | `process` only, when it actually removes an id from the Pool | `SubEndEvent` |
+| `cleanup` | `[cleanup, subscriber]` | Every subscriber-signed call that released at least one past day | `CleanupReport` |
 | `approval` | `[approval, subscriber]` | Every subscriber-signed call (`subscribe`, `extend`, `cancel`, `refresh_approval`) | `ApprovalEvent` |
 | `low_bal` | `[low_bal, subscriber]` | `process`, after a charge, when the balance is below `price` | `LowFundsEvent` |
 | `low_alw` | `[low_alw, subscriber]` | `process`, after a charge, when the allowance is below `price` | `LowFundsEvent` |
@@ -203,29 +264,20 @@ Payload structs:
 | `ExecutorEvent` | `service_id: u64`, `executor: Vec<Address>`: one element when set, empty when removed |
 | `SubEvent` | `sub_id: u64`, `service_id: u64`, `amount: i128`, `period_end_ts: u64`, `reserved: i128`, `paid_periods: u32` |
 | `ChargedEvent` | `sub_id: u64`, `service_id: u64`, `amount: i128`, `period_end_ts: u64`, `reserved: i128`, `paid_periods: u32` |
-| `SubEndEvent` | `sub_id: u64`, `service_id: u64`, `reason: EndReason`, `period_end_ts: u64`, `reserved: i128`, `paid_periods: u32` |
-| `ApprovalEvent` | `amount: i128`, `expiration_ledger: u32`, `live: Vec<u64>` |
+| `CleanupReport` | `days_cleared: u32`, `released: i128`, `more: bool` |
+| `ApprovalEvent` | `amount: i128`, `expiration_ledger: u32` |
 | `LowFundsEvent` | `sub_id: u64`, `available: i128` |
 
 Field notes:
 
 - `SubEvent.amount` is the first payment for `sub_new` (0 for a trial), the budget added for `sub_ext`, and the budget released for `sub_cncl`.
 - `ChargedEvent.amount` is the price charged. The payee is the service's merchant, fixed by `service_id`, and also named in the token's own `transfer` event.
-- `period_end_ts`, `reserved` and `paid_periods` in `SubEvent`, `ChargedEvent` and `SubEndEvent` are the values after the change.
-- `ApprovalEvent` mirrors the `approve` just made: amount, expiration ledger (0 on revoke) and the live ids.
+- `period_end_ts`, `reserved` and `paid_periods` in `SubEvent` and `ChargedEvent` are the values after the change.
+- `ApprovalEvent` mirrors the `approve` just made: amount and expiration ledger (both 0 on revoke).
 - `LowFundsEvent.available` is the token balance (`low_bal`) or the allowance (`low_alw`) after the charge. The allowance is read once per subscriber per `process` call and lowered by each charge in that call. The `charged` event just before it carries the full resulting state.
 
 `low_bal`, `low_alw` and `charged` are kept small so that a worst-case batch of 15 charges stays under Pi Testnet's 16,384-byte event limit.
 
-#### `EndReason` (enum, append-only)
-
-| Variant | Emitted when |
-|---|---|
-| `Stale` | `process` found the window closed |
-| `Exhausted` | `process` found `reserved < price` |
-| `ChargeFailed` | Reserved. Not emitted: a failed charge does not end or drop a subscription. |
-| `ServiceInactive` | `process` found the service `Inactive` |
-
-Why a subscription ended is never stored. It comes from these events. Subscriptions that end without a `process` call (for example, cancelled ones) emit no `sub_end`; `sync_pool` drops them silently.
+There is no "subscription ended" event. A subscription ends by the clock (see [6.8](6-subscription-lifecycle.md#68-status)), not by a call. Off-chain systems read the end from the subscription's state, and the `cleanup` event reports budget released for ended subscriptions in bulk.
 
 Next: [`4-Error-Codes`](4-error-codes.md)

@@ -25,7 +25,8 @@ Review checklist for the implementation:
 | The allowance is deleted at its expiry ledger | Network (temporary storage) |
 | A charge never exceeds the subscription's `reserved` | Contract |
 | At most one charge per period, only inside the window `[period_end_ts, period_end_ts + period_secs)` | Contract |
-| Charges only on subscriptions in the subscriber's Pool, of a non-`Inactive` service, paid to `service.merchant` | Contract |
+| Charges only on subscriptions that have an item in their deadline's day bucket, of a non-`Inactive` service, paid to `service.merchant` | Contract |
+| The approval set at each signed call is never lower than what live subscriptions can charge | Contract (`Allowance.total`) |
 | One live subscription per (subscriber, service); one trial per (subscriber, service) | Contract |
 | Sign-ups only on `Open` services | Contract |
 | Only the merchant or its executor can call `process` | Contract |
@@ -36,7 +37,7 @@ The contract rules hold for every caller, including direct RPC calls that bypass
 
 The subscriber's signature on `subscribe`, `extend`, `cancel` or `refresh_approval` covers the whole call tree, including the inner token `approve` with its exact amount and expiry, and the first-payment `transfer` at `subscribe`. Wallets should show these values to the user, read from the transaction itself.
 
-The approve expiry is rounded up to a 720-ledger bucket (and, when capped, the cap is rounded down to one) so that it is almost always the same at simulation and at execution; see [10.10](#1010-known-limitation-approve-expiry-mismatch) for the exception. If a charge lands between simulation and execution, the live sum changes, the signature no longer matches, and the call fails without effect. The wallet simulates again and asks for a new signature.
+The approve expiry is rounded up to a 720-ledger bucket (and, when capped, the cap is rounded down to one) so that it is almost always the same at simulation and at execution; see [10.10](#1010-known-limitation-approve-expiry-mismatch) for the exception. If a charge lands between simulation and execution, `total` changes, the signature no longer matches, and the call fails without effect. The wallet simulates again and asks for a new signature.
 
 `extend` carries `expected_period_end` for the same reason: if a charge moved `period_end_ts` after the subscriber read it, the call fails with `PeriodMismatch`.
 
@@ -52,18 +53,24 @@ Every Soroban entry has a time to live (TTL). Pi Testnet settings (checked 2026-
 
 How the contract manages it:
 
-- The target for a live subscription is its next window end plus 7 days: `period_end_ts + period_secs + 7 days`, converted at 5 seconds per ledger and capped at the network maximum.
+- Each entry has a target, converted at 5 seconds per ledger and capped at the network maximum (table below).
 - An entry is extended to its target only when its remaining TTL is below `target - min(1 day, target / 2)`. So repeated calls in the same period do not each pay for a tiny bump, and the contract never extends to the maximum on every write, which keeps fees low.
-- `subscribe`, `extend` and `cancel` extend the subscription's `Sub` and its `Service`. Every subscriber-signed call extends the subscriber's `Pool` to the largest target among its live subscriptions.
-- A successful charge extends the `Sub`, the subscriber's `Pool`, the `Service` and, when the executor made the call, `Executor(service_id)`.
+| Entry | Target: kept live until | Extended by |
+|---|---|---|
+| `Sub`, `Service` | the subscription's window end plus 7 days: `period_end_ts + period_secs + 7 days` | `subscribe`, `extend`, `cancel`, a successful charge |
+| `Bkt(subscriber, day)` | the end of that UTC day plus 7 days | every write to the bucket |
+| `Allowance(subscriber)` | `max_close + 7 days` | every write to the record |
+| `Executor(service_id)` | as the `Service` | a successful charge made by the executor |
+| `WalletSubs`, `WalletSubCount` | minimum TTL | never; the `subscribe` that appends restores an archived page or count |
 - `register_service` does not extend the new `Service`; it starts at the network minimum.
 - `ActiveSub` and `TrialUsed` are written once at the network minimum and never extended.
-- Ended subscriptions are allowed to archive.
+- Ended subscriptions are allowed to archive. Cleanup restores an archived past bucket when it releases it; that counts as a disk read.
 
 | Entry | Storage | When it expires | Recoverable? |
 |---|---|---|---|
-| Token allowance | temporary | At its expiration ledger: at most about 180 days after the last approve | **No.** It is deleted. Only the subscriber can set a new one, with any signed call (`refresh_approval` is the simplest). If it lapses while a subscription is still live, that subscription's charges return `ApprovalLost` (nothing changes, retried) until the subscriber's next signed call re-approves the live sum. |
-| `Sub`, `Service`, `Pool` of a live subscription | persistent | Kept live by charges and writes | Yes |
+| Token allowance | temporary | At its expiration ledger: at most about 180 days after the last approve | **No.** It is deleted. Only the subscriber can set a new one, with any signed call (`refresh_approval` is the simplest). If it lapses while a subscription is still live, that subscription's charges return `ApprovalLost` (nothing changes, retried) until the subscriber's next signed call re-approves `total`. |
+| `Sub`, `Service`, `Allowance`, current `Bkt` pages | persistent | Kept live by charges and writes | Yes |
+| `WalletSubs` pages, `WalletSubCount` | persistent | Archive after the minimum TTL | Yes: still readable; restored by the next `subscribe` |
 | An ended subscription's entries, `ActiveSub`, `TrialUsed` | persistent | Archive after their TTL | Yes |
 | Contract instance and code | instance / code | If nobody extends them | Yes |
 
@@ -77,13 +84,13 @@ A subscriber can call the token's `approve` directly, outside this contract.
 
 | Edit | Effect |
 |---|---|
-| Revoke (set to 0) | Each charge returns `ApprovalLost`. Nothing changes and the subscriptions stay in the Pool; they are retried until their windows close, then become `Stale`. The next signed call re-approves the live sum. |
+| Revoke (set to 0) | Each charge returns `ApprovalLost`. Nothing changes; the charges are retried until their windows close, then become `Stale`. The next signed call re-approves `total`. |
 | Lower, but not to 0 | Charges that need more than is left fail with `ChargeFailed`. The subscriptions stay `Due` and are retried until their windows close, then become `Stale`. |
 | Raise | No effect on what can be charged: each subscription still takes at most its `reserved`, one price per period |
 
-The next call the subscriber signs on this contract sets the allowance back to the live sum.
+The next call the subscriber signs on this contract sets the allowance back to `total`.
 
-Between signatures, the allowance can be larger than the live budgets (see [6.6](6-subscription-lifecycle.md#66-keeping-the-allowance-in-sync)). That leftover cannot be spent, because every charge must pass the charge rule against a live `reserved` budget.
+Between signatures, and while a cleanup backlog remains (`more = true`), the allowance can be higher than the live budgets need (see [6.7](6-subscription-lifecycle.md#67-keeping-the-allowance-in-sync)). It is never lower. That extra amount cannot be spent, because every charge must pass the charge rule against the subscription's own `reserved` budget.
 
 ### 10.6 Executor key leak
 
@@ -101,7 +108,7 @@ The merchant key is more powerful: it can change service state and set the execu
 - `cancel` needs only the subscriber's signature. A subscriber can always stop future charges.
 - Service terms never change after sign-up. A merchant cannot raise the price on existing subscribers.
 - Total charges never exceed the budget the subscriber approved (`price × periods`, plus any `extend`).
-- A subscriber can also revoke the allowance in the token directly at any time. A revoked or expired allowance stops all charges for that subscriber (`ApprovalLost`) until the subscriber signs any call on this contract, which re-approves the live sum. `cancel` stops a subscription for good.
+- A subscriber can also revoke the allowance in the token directly at any time. A revoked or expired allowance stops all charges for that subscriber (`ApprovalLost`) until the subscriber signs any call on this contract, which re-approves `total`. `cancel` stops a subscription for good.
 
 ### 10.8 Upgrades
 
@@ -115,7 +122,9 @@ The admin role itself moves only through a two-step handover.
 
 ### 10.9 Limits
 
-- At most 50 live subscriptions per subscriber (`PoolFull`).
+- No limit on live subscriptions per wallet. A signed call with nothing to clean touches about 5–8 ledger entries, whatever the number of live subscriptions (estimate; to be measured).
+- Cleanup releases at most 40 day pages per signed call (up to about 90 entries with a full backlog). The rest waits for the next signed call.
+- One wallet's bucket for one day is a single ledger entry, limited to 64 KB: roughly 1,600 subscriptions of one wallet whose windows close on the same UTC day. Beyond that the write fails.
 - At most 15 items per `process` call (`ProcessLimitTooHigh`), sized for Pi Testnet's per-transaction limits.
 - `get_subscriptions` reads at most 50 ids per call (`TooManyIds`).
 
@@ -124,5 +133,13 @@ The admin role itself moves only through a two-step handover.
 The approve expiry is rounded up to a 720-ledger bucket so that it is normally the same at simulation and at execution. If the ledger at execution has crossed a bucket edge since simulation, the executed `approve` expiry differs from the simulated one. The subscriber's signed authorization then no longer matches, and the transaction fails with an auth error. This is estimated at 0.1–0.4% of signed calls.
 
 Nothing changes on-chain when this happens. Clients should treat this auth error as "simulate again and sign again", and retry automatically.
+
+### 10.11 Known limitation: UTC midnight between simulation and execution
+
+Cleanup releases whole past UTC days only, so simulation and execution normally see the same days and produce the same `CleanupReport` and approve amount. If a UTC midnight passes between simulation and execution, execution sees one more past day. The cleanup result, and so the approve amount, can differ from what the subscriber signed, and the transaction fails with an auth error. Nothing changes on-chain. This is rare. Clients handle it as in 10.10: simulate again, sign again, resubmit.
+
+### 10.12 Possible later upgrades
+
+- A public, permissionless `cleanup(subscriber)`. Anyone, for example a backend, could release an idle wallet's past day buckets and pay the fee. It would lower `Allowance.total` but could not change the token allowance (that needs the subscriber's signature). It is not in this revision.
 
 Back to: [`ReadMe`](ReadMe.md)

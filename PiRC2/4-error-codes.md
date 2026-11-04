@@ -17,8 +17,8 @@ Errors are a `#[contracterror]` enum. Codes are append-only: a code is never reu
 | 11 | `SubscriptionEnded` | `extend` on a subscription that has ended (window closed, service `Inactive`, or past `period_end_ts` with `reserved < price`) |
 | 12 | `InvalidStateTransition` | Leaving `Inactive`, or setting `Inactive` again |
 | 13 | `ProcessLimitTooHigh` | `process` with more than 15 items |
-| 14 | `AmountOverflow` | Amount arithmetic would overflow `i128` (`price × periods`, `reserved` or the live sum) |
-| 15 | `PoolFull` | The subscriber already has 50 other live subscriptions (`subscribe`, `extend`) |
+| 14 | `AmountOverflow` | Amount arithmetic would overflow `i128` (`price × periods`, `reserved` or `Allowance.total`) |
+| 15 | — | Retired (was `PoolFull` in an earlier revision). Never reused. |
 | 16 | `PeriodMismatch` | `extend`'s `expected_period_end` is not the stored `period_end_ts` |
 | 17 | `NoAdminProposed` | `accept_admin` with no pending admin |
 | 18 | `NotProposedAdmin` | `accept_admin` by an address other than the proposed one |
