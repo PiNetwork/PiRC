@@ -1,6 +1,6 @@
 # PiRC2: Subscription Contract API (Pi Request for Comment)
 
-> **Revision note (2026-11-04).** This revision describes the day-bucket design decided on 2026-11-04: per-wallet `Allowance` summary, `Bkt` day buckets, cleanup at the start of every subscriber-signed call, and the `WalletSubs` index. It replaces the earlier per-wallet `Pool`. The reference implementation (PR #5 in `PiCoreTeam/pi-smartcontracts`) still has the `Pool` and is being updated to this revision.
+> **Revision note (2026-11-04).** This revision describes the day-bucket design: per-wallet `Allowance` summary, `Bkt` day buckets, cleanup at the start of every subscriber-signed call, and the `WalletSubs` index. It replaces the earlier per-wallet `Pool`. Reference implementation: PR #5 in `PiCoreTeam/pi-smartcontracts`.
 
 This document specifies the Subscription Contract API: a Soroban smart contract that runs recurring payment subscriptions on Pi Network. It defines how merchants register services with a fixed price and billing period, how subscribers set a budget for a subscription without sending funds anywhere, and how merchants collect each period's payment from that budget.
 

@@ -79,8 +79,7 @@ Amounts are in the token's smallest unit. Pi has 7 decimal places: `10000000` = 
 
 ### 9.3 Deploy your own copy (optional)
 
-Build the WASM from the reference implementation (`PiCoreTeam/pi-smartcontracts`, `contracts/subscription`). Until PR #5 is updated to this revision, it builds the earlier `Pool` version, whose storage, return types and reads differ from this guide.
-
+Build the WASM from the reference implementation (`PiCoreTeam/pi-smartcontracts`, `contracts/subscription`, PR #5):
 
 ```bash
 stellar contract build    # -> target/wasm32v1-none/release/subscription.wasm

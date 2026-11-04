@@ -36,11 +36,11 @@ Anyone can call the read methods.
 **Allowance summary and day buckets.** The Pi token holds one allowance per (subscriber, contract), and only the subscriber's signature can change it. The contract keeps, per wallet:
 
 - an `Allowance` record with `total`, the sum of the budgets that can still be charged;
-- day buckets `Bkt(subscriber, day)`. Each subscription with budget left sits in the bucket of the UTC day its current charge window closes. A bucket part holds up to 400 items; a busier day continues in overflow parts `BktPart(subscriber, day, k)`, so a day never fills up.
+- day buckets `Bkt(subscriber, day)`. Each subscription with budget left sits in the bucket of the UTC day its current charge window closes. A bucket part holds up to 64 items; a busier day continues in overflow parts `BktPart(subscriber, day, k)`, so a day never fills up.
 
 A charge moves the subscription to the next period's bucket at once. So an item still in a bucket after its day has passed belongs to a subscription that was not charged in its window, which has ended.
 
-Every call the subscriber signs starts with **cleanup**: it releases whole past days (up to 40 pages per call; each part is a page) without reading any subscription. It then **sets** the allowance to `total`. Between signatures the allowance can be higher than needed; it is never lower. That extra amount cannot be spent. Details in [6.6](6-subscription-lifecycle.md#66-cleanup) and [6.7](6-subscription-lifecycle.md#67-keeping-the-allowance-in-sync).
+Every call the subscriber signs starts with **cleanup**: it releases whole past days (up to 40 pages per call, each part being a page, and at most about 2,000 items) without reading any subscription. It then **sets** the allowance to `total`. Between signatures the allowance can be higher than needed; it is never lower. That extra amount cannot be spent. Details in [6.6](6-subscription-lifecycle.md#66-cleanup) and [6.7](6-subscription-lifecycle.md#67-keeping-the-allowance-in-sync).
 
 **Wallet index.** `WalletSubs(subscriber, page)` lists every `sub_id` a wallet ever created, 50 per page, including subscriptions created by calling the contract directly. It is append-only.
 
@@ -112,7 +112,7 @@ flowchart TD
   S5c -- yes --> O5c[ApprovalLost<br/>retried later]
   S5c -- no --> S6{try_transfer_from succeeds?}
   S6 -- no --> O6[ChargeFailed<br/>retried later]
-  S6 -- yes --> O7["Charged<br/>period_end_ts += period_secs<br/>reserved -= price, paid_periods += 1<br/>move item to next deadline's bucket<br/>total -= price<br/>event charged, maybe low_bal / low_alw"]
+  S6 -- yes --> O7["Charged<br/>period_end_ts += period_secs<br/>reserved -= price, paid_periods += 1<br/>move item to next deadline's bucket<br/>(in place if the same day)<br/>total -= old amount, += new amount<br/>event charged, maybe low_bal / low_alw"]
 ```
 
 Every outcome other than `Charged` changes nothing. The allowance is read once per subscriber per call and lowered by each charge in that call.

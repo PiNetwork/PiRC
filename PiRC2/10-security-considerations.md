@@ -59,12 +59,12 @@ How the contract manages it:
 |---|---|---|
 | `Sub`, `Service` | the subscription's window end plus 7 days: `period_end_ts + period_secs + 7 days` | `subscribe`, `extend`, `cancel`, a successful charge |
 | `Bkt(subscriber, day)` and its overflow parts `BktPart(subscriber, day, k)` | the end of that UTC day plus 7 days (the same rule for every part) | every write to that part |
-| `Allowance(subscriber)` | `max_close + 7 days` | every write to the record |
+| `Allowance(subscriber)` | `max(max_close, end of the last busy day) + 7 days`, so the record outlives its buckets even after `total` reached 0 | every store, including when the record was unchanged and not rewritten |
 | `Executor(service_id)` | as the `Service` | a successful charge made by the executor |
 | `WalletSubs`, `WalletSubCount` | minimum TTL | never; the `subscribe` that appends restores an archived page or count |
 - `register_service` does not extend the new `Service`; it starts at the network minimum.
 - `ActiveSub` and `TrialUsed` are written once at the network minimum and never extended.
-- Ended subscriptions are allowed to archive. Cleanup restores an archived past bucket part when it releases it; each counts as a disk read.
+- Ended subscriptions are allowed to archive. Cleanup restores an archived past bucket part when it releases it; each counts as a disk read and toward the transaction's read and write byte limits. The cleanup item budget (2,000 items per call) keeps that within Pi's limits even when every past part is full and archived ([6.6](6-subscription-lifecycle.md#66-cleanup)).
 
 | Entry | Storage | When it expires | Recoverable? |
 |---|---|---|---|
@@ -122,9 +122,10 @@ The admin role itself moves only through a two-step handover.
 
 ### 10.9 Limits
 
-- No limit on live subscriptions per wallet. A signed call with nothing to clean touches about 5–8 ledger entries, whatever the number of live subscriptions (estimate; to be measured).
-- Cleanup releases at most 40 day pages per signed call (up to about 90 entries with a full backlog). The rest waits for the next signed call.
-- A day bucket never fills up. Each part holds at most 400 items (about 16 KB, under Soroban's 64 KB entry limit). Removals leave holes that later inserts reuse; a new overflow part is created only when every existing part of that day is full. A normal day (at most 400 items) costs 1 read + 1 write to insert, find or remove. A day with `k` parts costs up to `k` reads to find, plus one probe of the missing next key when every part is full or the item is not there.
+- No limit on live subscriptions per wallet. A signed call with nothing to clean touches 7–16 ledger entries (`subscribe`: 15–16, including the token's entries and the wallet index), whatever the number of live subscriptions. This was measured on the reference implementation from 1 to 2,000 live subscriptions.
+- Cleanup releases at most 40 bucket parts per signed call, and starts no new part after 2,000 items (at most about 2,063 items, about 92 KB). With a 40-page backlog that adds about 40 reads and 40 writes. The rest waits for the next signed call.
+- `process` ×15 worst case is 108,896 write bytes (two full 64-item parts rewritten per charge), under the 132,096 limit ([6.5](6-subscription-lifecycle.md#65-process-batch-charge)). Billing clients should still split a batch whose simulation exceeds the limit.
+- A day bucket never fills up. Each part holds at most 64 items (about 2.9 KB). Removals leave holes that later inserts reuse; a new overflow part is created only when every existing part of that day is full. A normal day (at most 64 items) costs 1 read + 1 write to insert, find or remove. A day with `k` parts costs up to `k` reads to find, plus one probe of the missing next key when every part is full or the item is not there.
 - At most 15 items per `process` call (`ProcessLimitTooHigh`), sized for Pi Testnet's per-transaction limits.
 - `get_subscriptions` reads at most 50 ids per call (`TooManyIds`).
 
@@ -138,7 +139,31 @@ Nothing changes on-chain when this happens. Clients should treat this auth error
 
 Cleanup releases whole past UTC days only, so simulation and execution normally see the same days and produce the same `CleanupReport` and approve amount. If a UTC midnight passes between simulation and execution, execution sees one more past day. The cleanup result, and so the approve amount, can differ from what the subscriber signed, and the transaction fails with an auth error. Nothing changes on-chain. This is rare. Clients handle it as in 10.10: simulate again, sign again, resubmit.
 
-### 10.12 Possible later upgrades
+### 10.12 Known behaviour: over-approval windows
+
+The token allowance set at a signed call can be higher than what the wallet's subscriptions can still be charged. This is expected; that extra amount cannot be spent ([6.7](6-subscription-lifecycle.md#67-keeping-the-allowance-in-sync)).
+
+| Case | How long the extra amount stays | Why |
+|---|---|---|
+| A subscription of a service made `Inactive` | Up to one billing period after its `period_end_ts`, until its deadline's day has passed and the subscriber signs again | `process` changes nothing for it (`Ended`), so its item stays in the bucket of its deadline (`period_end_ts + period_secs`). Cleanup releases it only after that day. |
+| A subscription that ends today (window closed, or budget used up) | Until the next UTC midnight, then until the subscriber's next signed call | Cleanup releases whole past days only; today's bucket waits. |
+| Any ended subscription while a cleanup backlog remains (`more = true`) | Until enough signed calls have cleaned the backlog | Each call releases at most 40 parts. |
+
+In every case, charges still need a live subscription in its window with `reserved >= price`, so the extra amount is unspendable.
+
+### 10.13 Known behaviour: very many far-future days
+
+A bucket day 512 or more days after `clean_through` is not tracked in the bitmap. It is listed in `Allowance.far_days` instead, one entry per such day. Normal plans never need it; it takes periods or trials of more than about 512 days.
+
+A wallet that creates thousands of subscriptions whose windows close on different far-future days grows `far_days` toward Soroban's 64 KB entry limit.
+
+- The `Allowance` record is read and rewritten by that wallet's signed calls and charges, so each of them gets more expensive as it grows. They can fail on per-transaction byte limits.
+- Adding a far day fails once the record would exceed the entry limit.
+- Only the wallet that creates the subscriptions is affected, so the problem is self-inflicted.
+
+A mitigation is under discussion.
+
+### 10.14 Possible later upgrades
 
 - A public, permissionless `cleanup(subscriber)`. Anyone, for example a backend, could release an idle wallet's past day buckets and pay the fee. It would lower `Allowance.total` but could not change the token allowance (that needs the subscriber's signature). It is not in this revision.
 

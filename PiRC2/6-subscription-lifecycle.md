@@ -169,8 +169,8 @@ The allowance in step 8 is read from the token once per subscriber per call, the
 **On `Charged`:**
 
 1. `period_end_ts += period_secs`, `reserved -= price`, `paid_periods += 1`. The token lowers the allowance by `price` itself.
-2. The item leaves the old deadline's bucket. If budget is left, it goes into the bucket of the new deadline (one period later) with the lower amount.
-3. `total -= price`.
+2. The item moves, using the position step 7 found. If budget is left and the new deadline falls on the same UTC day (a period shorter than a day), its amount is updated in place. Otherwise it is removed from the old day in place and, if budget is left, added to the bucket of the new deadline (one period later) with the lower amount.
+3. `total` moves by exactly what the buckets changed: minus the old item's amount, plus the new item's amount (0 if none). While the invariant holds this equals `total -= price`. If `total` reaches 0, `max_close` resets. `process` writes the `Allowance` record only if it changed and never deletes it.
 4. Event `charged`. Then `low_bal` if the subscriber's balance is now below `price`, and `low_alw` if the allowance is now below `price`.
 
 Because `process` moves every charged subscription forward at once, any item still in a bucket after its day has passed was not charged in its window. That subscription has ended.
@@ -198,6 +198,18 @@ Because `process` moves every charged subscription forward at once, any item sti
 | Footprint entries | 400 |
 | Instructions | 400M |
 
+Write bytes are the tightest. One charge can rewrite two full bucket parts: the old day's part the item leaves and the new day's part it joins. The part size, 64 items, is chosen so that 15 such charges fit.
+
+| Part size | Worst-case `process` ×15 (two full parts rewritten per item) |
+|---|---|
+| 400 items | 552,416 bytes: over the 132,096 limit (already at 4 items) |
+| 100 items | 156,416 bytes: over the limit |
+| **64 items** | **108,896 bytes (measured): fits** |
+
+With 400-item parts, an attacker could cheaply fill parts using trial services and make a merchant's whole batch fail.
+
+The merchant's billing client (for example the server SDK's `processDue`) should still simulate each batch first, and split it if the simulation exceeds the write-byte limit.
+
 **Who calls it.** The contract does not schedule charges. The merchant's server (or any process holding the merchant or executor key) keeps its own list of subscriptions, reads their `period_end_ts`, and sends the due ones. A charge can land any time inside its window, so a late run still collects the period without shifting the next one.
 
 ### 6.6 Cleanup
@@ -211,8 +223,8 @@ cleanup(subscriber):
       start at part 0, or at Allowance.resume's part if this day was stopped earlier
       read parts k, k+1, ... until a part key does not exist:
           total -= sum of the amounts in the part; delete the part
-      if the 40-page limit is reached first: Allowance.resume = (d, next part);
-          more = true; stop (the next call continues here)
+      before each part: if 40 pages were done, or 2,000 items were read in this call:
+          Allowance.resume = (d, next part); more = true; stop (the next call continues here)
       day d done: clear its busy bit; resume = none
   advance clean_through to the first day not yet cleaned (at most today)
   return CleanupReport { days_cleared, released, more }
@@ -222,9 +234,10 @@ cleanup(subscriber):
 |---|---|
 | What it reads | Only the wallet's `Allowance` record and the parts of its past buckets. It never reads `Sub` or `Service`: an item still in a past day's bucket belongs to a subscription that was not charged in its window, so it has ended. |
 | Which days | Whole past UTC days only. Today's bucket waits until tomorrow, so the approval can carry up to about one day of extra budget. |
-| Limit | At most 40 pages per call. Each part (part 0 or an overflow part) read and deleted is one page. The read of the missing key that ends a day's chain is not a page. Cost is per page, not per subscription; one page holds up to 400 subscriptions. 40 reads and 40 deletes (plus restores of archived pages) fit within Pi's per-transaction limits. |
+| Limit | Cleanup stops at whichever comes first: 40 pages, or 2,000 items read in the call (`CLEAN_ITEM_BUDGET`). Each part (part 0 or an overflow part) read and deleted is one page. The read of the missing key that ends a day's chain is not a page. The item budget is checked before each part, so a call reads at most about 2,063 items (about 92 KB). 40 pages of full 64-item parts would be 2,560 items, so the budget binds only for backlogs of mostly full parts. |
+| Why an item budget | Pi counts the restore of archived past parts against the per-transaction limits on disk reads (200,000 bytes) and write bytes (132,096). A backlog beyond those limits would make every signed call of that wallet fail, `cancel` included, and the wallet would stay stuck. The budget keeps each call's cleanup to about 92 KB of parts. Normal backlogs, a few items per day, never reach it; for them the 40-page limit applies. |
 | Failure | Cleanup never fails, and it never makes the user's action fail. |
-| Backlog | If `more = true`, `total` still includes some ended subscriptions. A day stopped part-way is recorded in `Allowance.resume`; `clean_through` stays at that day. The approval is then **higher** than needed, never lower. Each further signed call, for example `refresh_approval`, cleans 40 more pages. |
+| Backlog | If `more = true`, `total` still includes some ended subscriptions. A day stopped part-way is recorded in `Allowance.resume`; `clean_through` stays at that day. The approval is then **higher** than needed, never lower. Each further signed call, for example `refresh_approval`, cleans up to 40 more pages. |
 | Simulation | Simulation and execution see the same past days, so the report matches, except across a UTC midnight. See [10.11](10-security-considerations.md#1011-known-limitation-utc-midnight-between-simulation-and-execution). |
 | Event | `cleanup`, topic `[cleanup, subscriber]`, data `CleanupReport`, when at least one bucket part was deleted |
 
@@ -235,7 +248,7 @@ flowchart TD
   A[Signed call starts] --> B{busy day d with<br/>clean_through <= d < today?}
   B -- no --> F[advance clean_through to today]
   B -- yes --> K0["k = Allowance.resume part if resume.day == d<br/>else k = 0"]
-  K0 --> C{40 pages done?}
+  K0 --> C{"40 pages done, or<br/>2,000 items read?"}
   C -- yes --> SV["Allowance.resume = (d, k)<br/>more = true<br/>clean_through stays at d"]
   C -- no --> Q{"part k of day d exists?<br/>(k = 0: Bkt, k >= 1: BktPart)"}
   Q -- yes --> D["total -= sum of its amounts<br/>delete part k<br/>k += 1"]
@@ -263,12 +276,12 @@ Once a subscription has ended, it stays ended: no call can raise its `reserved` 
 
 **Day buckets.** Each subscription with budget left is in exactly one bucket: the UTC day its current charge window closes, `day(period_end_ts + period_secs)`. The bucket holds `(sub_id, amount)`, where `amount = (reserved / price) × price`. `Allowance.total` is the sum of every item in the wallet's buckets.
 
-**Overflow parts.** A day's bucket is part 0 (`Bkt`) plus zero or more overflow parts (`BktPart`), each holding at most 400 items. Items are not sorted; the order within a day never matters.
+**Overflow parts.** A day's bucket is part 0 (`Bkt`) plus zero or more overflow parts (`BktPart`), each holding at most 64 items (`PART_CAP`). Items are not sorted; the order within a day never matters.
 
 | Operation | How |
 |---|---|
 | Chain | Part 0 is `Bkt(subscriber, day)`; overflow parts are `BktPart(subscriber, day, 1)`, `…, 2)`, … There is no part counter: the chain ends at the first key that does not exist. |
-| Insert | Read parts 0, 1, … and append to the **first** part with room (fewer than 400 items), reusing holes left by removals. Only when every existing part is full does the scan reach the missing key; that part is then created. |
+| Insert | Read parts 0, 1, … and append to the **first** part with room (fewer than 64 items), reusing holes left by removals. Only when every existing part is full does the scan reach the missing key; that part is then created. |
 | Find (`cancel`, `extend`, a charge moving the item, the `process` membership check) | Read parts 0, 1, … and stop at the part that holds the `sub_id`. Only if it is not found does the scan continue to the missing key that ends the chain. |
 | Remove | Remove the item in place and rewrite only that part. There is no refill. The part is kept even if it becomes empty, because deleting a middle part would break the chain. The day keeps its busy bit. |
 | Update (`extend`) | Change the item's amount in place. |
@@ -278,16 +291,16 @@ Past days are touched only by cleanup. Charges land before the window closes (to
 
 The "next part doesn't exist" read is done only where the end of the chain matters: always in cleanup, in an insert when every part is full, and in a find that has not found the item yet. A normal day takes no extra read.
 
-Cost on a normal day (at most 400 items): insert 1 read + 1 write; find or remove 1 read + 1 write; cleanup 1 read + 1 probe of the missing next key + 1 delete. A day with `k` parts: up to `k` reads to find, and `k` reads (+1 probe if all are full) to insert. A missing-key read costs one footprint entry and about 70 bytes of transaction size, possibly a disk read (to be measured).
+Cost on a normal day (at most 64 items): insert 1 read + 1 write; find or remove 1 read + 1 write; cleanup 1 read + 1 probe of the missing next key + 1 delete. A day with `k` parts: up to `k` reads to find, and `k` reads (+1 probe if all are full) to insert. A missing-key read costs one footprint entry and about 70 bytes of transaction size, possibly a disk read (to be measured).
 
 **What changes `total` and the buckets.**
 
 | Event | `total` | Buckets |
 |---|---|---|
 | `subscribe` (any caller, including direct RPC) | `+ amount` | add `(sub_id, amount)` to the deadline's day if `amount > 0`; append `sub_id` to `WalletSubs` |
-| `extend(periods)` | `+ price × periods` | update the item's amount; add an item if it had none |
-| `cancel` | `− amount` | remove the item; `reserved = 0` |
-| `process`, successful charge | `− price` (the token lowers the allowance by the same) | remove from the old deadline's day; if `amount − price > 0`, add to the next deadline's day with the lower amount |
+| `extend(periods)` | `−` old item amount `+` new item amount, which is `+ price × periods` | update the item's amount in place; add an item if it had none |
+| `cancel` | `−` the removed item's amount | remove the item in place; `reserved = 0` |
+| `process`, successful charge | `−` old item amount `+` new item amount, which is `− price` while the invariant holds (the token lowers the allowance by `price`) | remove from the old deadline's day; if `amount − price > 0`, add to the next deadline's day with the lower amount (updated in place if that is the same day) |
 | `process`, any other outcome | none | none |
 | Cleanup of a past day | `−` the sum of that page | delete the page |
 
@@ -305,6 +318,7 @@ token.approve(subscriber, contract, total, expiration_ledger)
 | Rounding | Rounded **up** to a multiple of 720 ledgers (about 1 hour), so simulation and execution normally produce the same value and the subscriber's signature still matches |
 | Cap | At most `current_ledger + max_ttl - 1`, where `max_ttl` is the network's maximum entry TTL as reported to contracts (about 180 days on Pi). The cap is rounded **down** to a multiple of 720 ledgers, so a capped value also stays the same between simulation and execution. |
 | Nothing left | `total == 0` → `approve(subscriber, contract, 0, 0)`: revoke. `max_close` resets. The `Allowance` record is deleted once no busy day remains and no cleanup is in progress; until then it keeps tracking emptied days for cleanup. |
+| Storing the summary | After the approve, the `Allowance` record is written only if it changed. Its TTL is extended either way. |
 
 `max_close` only rises, on `subscribe` and `extend`. An expiry that is a little long is safe because the amount is accurate. The expiry itself is not stored in the contract. It lives in the token's own allowance entry (`["Allowance", {from, spender}]` → `{amount, live_until_ledger}`), which off-chain readers fetch directly.
 

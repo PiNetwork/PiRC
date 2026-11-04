@@ -66,7 +66,7 @@ Stored at `Sub(sub_id)` as `SubRecord::V1`. It is the only source of truth for a
 
 #### `AllowanceV1`
 
-Stored at `Allowance(subscriber)` as `AllowanceRecord::V1`. A small summary per wallet (about 150 bytes). It is deleted when `total` is 0, no busy day remains and no cleanup is in progress.
+Stored at `Allowance(subscriber)` as `AllowanceRecord::V1`. A small summary per wallet (about 150 bytes). It is rewritten only when a field changes. A subscriber-signed call deletes it when `total` is 0, no busy day remains and no cleanup is in progress; `process` never deletes it.
 
 | Field | Type | Description |
 |---|---|---|
@@ -75,7 +75,7 @@ Stored at `Allowance(subscriber)` as `AllowanceRecord::V1`. A small summary per 
 | `max_close` | `u64` | Latest `final_close` of any subscription added since `total` was last 0. Sets the approve expiry. |
 | `busy` | `BytesN<64>` | 512-bit bitmap. Bit `i` (byte `i >> 3`, mask `1 << (i & 7)`) is set if and only if day `clean_through + i` has a bucket, from its first insert until cleanup deletes it (even if all its items were removed). |
 | `far_days` | `Vec<u32>` | Busy days at or beyond `clean_through + 512`, ascending. Rare: only for periods longer than about 512 days. |
-| `resume` | `Option<(u32, u32)>` | `(day, next_part)` where a cleanup stopped mid-day at the 40-page limit. The next cleanup continues from there. `None` otherwise. |
+| `resume` | `Vec<(u32, u32)>` | Zero or one element. `(day, next_part)` where a cleanup stopped mid-day at the page or item limit; the next cleanup continues from there. Empty otherwise. (A 0/1-length list instead of an `Option`, because the SDK cannot encode an `Option` of a tuple inside a stored struct.) |
 
 The bitmap means the contract never probes empty days.
 
@@ -85,17 +85,17 @@ Part 0 of a day bucket. Stored at `Bkt(subscriber, day)` as `BucketRecord::V1`.
 
 | Field | Type | Description |
 |---|---|---|
-| `items` | `Vec<(u64, i128)>` | `(sub_id, amount)` for the wallet's subscriptions whose **current** charge window closes on this UTC day. At most 400 items. Unsorted. |
+| `items` | `Vec<(u64, i128)>` | `(sub_id, amount)` for the wallet's subscriptions whose **current** charge window closes on this UTC day. At most 64 items (`PART_CAP`). Unsorted. |
 
 #### `BucketPartV1`
 
-An overflow part of a day bucket. It is created only when every existing part of that day is full (400 items each). Stored at `BktPart(subscriber, day, k)` for `k = 1, 2, …`, as `BucketPartRecord::V1`.
+An overflow part of a day bucket. It is created only when every existing part of that day is full (64 items each). Stored at `BktPart(subscriber, day, k)` for `k = 1, 2, …`, as `BucketPartRecord::V1`.
 
 | Field | Type | Description |
 |---|---|---|
-| `items` | `Vec<(u64, i128)>` | Up to 400 more `(sub_id, amount)` items for the same day. Unsorted. |
+| `items` | `Vec<(u64, i128)>` | Up to 64 more `(sub_id, amount)` items for the same day. Unsorted. |
 
-A day's bucket is a chain of parts: `Bkt(subscriber, day)` (part 0), then `BktPart(subscriber, day, 1)`, `BktPart(subscriber, day, 2)`, … There is no part counter: the chain ends at the first part key that does not exist. A part can be empty after removals; it is kept, so the chain stays intact, and its room is reused by later inserts. Only cleanup deletes parts, always a whole day. A part is about 180 bytes plus about 40 bytes per item, so a full part (400 items, about 16 KB) stays well under Soroban's 64 KB entry limit. The bitmap in `AllowanceV1` is per day; parts do not appear in it.
+A day's bucket is a chain of parts: `Bkt(subscriber, day)` (part 0), then `BktPart(subscriber, day, 1)`, `BktPart(subscriber, day, 2)`, … There is no part counter: the chain ends at the first part key that does not exist. A part can be empty after removals; it is kept, so the chain stays intact, and its room is reused by later inserts. Only cleanup deletes parts, always a whole day. A full part (64 items) is about 2.9 KB. The part size is set by `process`: one charge can rewrite two full parts (the day it leaves and the day it joins), and 15 charges must stay under Pi's per-transaction write-byte limit (see [6.5](6-subscription-lifecycle.md#65-process-batch-charge)). The bitmap in `AllowanceV1` is per day; parts do not appear in it.
 
 #### Wallet index
 

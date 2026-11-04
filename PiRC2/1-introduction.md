@@ -4,7 +4,7 @@ This PiRC2 requests comments on the design and reference implementation (source 
 
 Subscriptions are one of the most common business models today, but they have been hard to build on blockchains. The subscription contract lets developers and businesses add recurring payments to their apps, settle each payment on-chain, and leave subscribers in control of their funds.
 
-The reference implementation is in [`PiCoreTeam/pi-smartcontracts`](https://github.com/PiCoreTeam/pi-smartcontracts) under `contracts/subscription/`. The branch will be announced. We ask the community to review the code and help find bugs or vulnerabilities.
+The reference implementation is in [`PiCoreTeam/pi-smartcontracts`](https://github.com/PiCoreTeam/pi-smartcontracts) under `contracts/subscription/` (PR #5). We ask the community to review the code and help find bugs or vulnerabilities.
 
 ### 1.1 What the contract does
 
