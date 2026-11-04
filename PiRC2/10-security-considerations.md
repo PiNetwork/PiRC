@@ -124,7 +124,7 @@ The admin role itself moves only through a two-step handover.
 
 - No limit on live subscriptions per wallet. A signed call with nothing to clean touches about 5–8 ledger entries, whatever the number of live subscriptions (estimate; to be measured).
 - Cleanup releases at most 40 day pages per signed call (up to about 90 entries with a full backlog). The rest waits for the next signed call.
-- A day bucket never fills up. Each part holds at most 400 items (about 16 KB, under Soroban's 64 KB entry limit), and more items for the same wallet and day go into overflow parts. Up to 400 items on a day costs the same as one part. With 1,600, finding an item takes up to 4 reads and inserting takes 2; each further 400 adds one read, on that day only.
+- A day bucket never fills up. Each part holds at most 400 items (about 16 KB, under Soroban's 64 KB entry limit). Removals leave holes that later inserts reuse; a new overflow part is created only when every existing part of that day is full. A normal day (at most 400 items) costs 1 read + 1 write to insert, find or remove. A day with `k` parts costs up to `k` reads to find, plus one probe of the missing next key when every part is full or the item is not there.
 - At most 15 items per `process` call (`ProcessLimitTooHigh`), sized for Pi Testnet's per-transaction limits.
 - `get_subscriptions` reads at most 50 ids per call (`TooManyIds`).
 

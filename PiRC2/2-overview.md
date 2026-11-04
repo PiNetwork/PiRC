@@ -36,7 +36,7 @@ Anyone can call the read methods.
 **Allowance summary and day buckets.** The Pi token holds one allowance per (subscriber, contract), and only the subscriber's signature can change it. The contract keeps, per wallet:
 
 - an `Allowance` record with `total`, the sum of the budgets that can still be charged;
-- day buckets `Bkt(subscriber, day)`. Each subscription with budget left sits in the bucket of the UTC day its current charge window closes. A bucket holds up to 400 items; a busier day continues in overflow parts `BktPart(subscriber, day, k)`, so a day never fills up.
+- day buckets `Bkt(subscriber, day)`. Each subscription with budget left sits in the bucket of the UTC day its current charge window closes. A bucket part holds up to 400 items; a busier day continues in overflow parts `BktPart(subscriber, day, k)`, so a day never fills up.
 
 A charge moves the subscription to the next period's bucket at once. So an item still in a bucket after its day has passed belongs to a subscription that was not charged in its window, which has ended.
 
@@ -72,7 +72,7 @@ flowchart TD
   T --> R["save Sub, set ActiveSub<br/>append sub_id to WalletSubs"]
   P --> R
   R --> K{amount > 0?}
-  K -- yes --> BK["add (sub_id, amount) to the bucket of day(deadline)<br/>part 0, or the last part / a new part if full<br/>total += amount, raise max_close"]
+  K -- yes --> BK["add (sub_id, amount) to the bucket of day(deadline)<br/>first part with room, or a new part if all are full<br/>total += amount, raise max_close"]
   K -- no --> EV
   BK --> EV[event sub_new]
   EV --> AP["token.approve(total, expiry from max_close)<br/>event approval<br/>return SubscribeResult"]
