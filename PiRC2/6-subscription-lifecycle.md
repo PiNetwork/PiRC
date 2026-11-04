@@ -30,7 +30,7 @@ Steps, in order:
 5. Trial or first payment (below). `period_end_ts` is computed with `TimestampOverflow` checks.
 6. Save the subscription. Set `ActiveSub(subscriber, service_id) = sub_id`.
 7. Append `sub_id` to the wallet index (`WalletSubs`, `WalletSubCount`).
-8. If `amount > 0`: add the item `(sub_id, amount)` to `Bkt(subscriber, day(deadline))`, add `amount` to `total`, and raise `max_close` to this subscription's `final_close`.
+8. If `amount > 0`: add the item `(sub_id, amount)` to the bucket of `day(deadline)` ([6.7](#67-keeping-the-allowance-in-sync)), add `amount` to `total`, and raise `max_close` to this subscription's `final_close`.
 9. Set the allowance to `total`.
 
 There is no limit on the number of live subscriptions per wallet.
@@ -83,7 +83,7 @@ Steps, in order:
 4. The subscription must not have ended: the window is still open, the service is not `Inactive`, and it is not past `period_end_ts` with `reserved < price`. Otherwise `SubscriptionEnded`.
 5. `reserved += price × periods` (`AmountOverflow`).
 6. If the new `amount > 0`:
-   - set the subscription's item in `Bkt(subscriber, day(deadline))` to the new amount;
+   - set the subscription's item in the bucket of `day(deadline)` to the new amount;
    - if it had no item (it was cancelled inside its period, or subscribed with `periods = 0`), add one;
    - add the difference to `total`;
    - raise `max_close` to the subscription's new `final_close`.
@@ -106,7 +106,7 @@ Steps, in order:
 1. Cleanup.
 2. The subscription must exist (`SubscriptionNotFound`), belong to `subscriber` (`Unauthorized`), and its service must exist (`ServiceNotFound`).
 3. If `reserved > 0` and the subscription has not ended:
-   - remove its item from `Bkt(subscriber, day(deadline))` and subtract the item's amount from `total`;
+   - remove its item from the bucket of `day(deadline)` and subtract the item's amount from `total`;
    - set `reserved = 0`, save it, and emit `sub_cncl`.
 4. Set the allowance to `total`, or revoke it (`approve(…, 0, 0)`) if `total` is 0.
 
@@ -157,7 +157,7 @@ Charges due subscriptions of one service. Returns one `ItemResult` per item, in 
 | 4 | `now < period_end_ts + period_secs` | `Stale` |
 | 5 | `reserved >= price` | `Exhausted` |
 | 6 | Service is not `Inactive` | `Ended` |
-| 7 | The subscription's item is in `Bkt(subscriber, day(deadline))` | `Ended` |
+| 7 | The subscription's item is in the bucket of `day(deadline)` (any part) | `Ended` |
 | 8 | The token allowance is not 0 | `ApprovalLost` |
 | 9 | `try_transfer_from(contract, subscriber → merchant, price)` succeeds | `ChargeFailed` |
 | ✓ | — | `Charged` |
@@ -207,18 +207,23 @@ Cleanup runs at the start of every subscriber-signed call. It releases the budge
 ```
 cleanup(subscriber):
   for each busy day d with clean_through <= d < today, oldest first,
-  at most 40 pages per call:
+  at most 40 pages (parts) per call:
+      for each overflow part k = parts, parts - 1, ..., 1:
+          total -= sum of the amounts in BktPart(subscriber, d, k)
+          delete BktPart(subscriber, d, k); lower parts
       total -= sum of the amounts in Bkt(subscriber, d)
       delete Bkt(subscriber, d); clear its busy bit
+  if the page limit stops a day part-way: save part 0 with the lowered parts;
+      the next call resumes that day
   advance clean_through to the first day not yet cleaned (at most today)
   return CleanupReport { days_cleared, released, more }
 ```
 
 | Property | Detail |
 |---|---|
-| What it reads | Only the wallet's `Allowance` record and its past buckets. It never reads `Sub` or `Service`: an item still in a past day's bucket belongs to a subscription that was not charged in its window, so it has ended. |
+| What it reads | Only the wallet's `Allowance` record and the parts of its past buckets. It never reads `Sub` or `Service`: an item still in a past day's bucket belongs to a subscription that was not charged in its window, so it has ended. |
 | Which days | Whole past UTC days only. Today's bucket waits until tomorrow, so the approval can carry up to about one day of extra budget. |
-| Limit | At most 40 pages per call. Cost is per page, not per subscription; one page can hold hundreds of subscriptions. 40 reads and 40 deletes (plus restores of archived pages) fit within Pi's per-transaction limits. |
+| Limit | At most 40 pages per call. Each part (part 0 or an overflow part) is one page. Cost is per page, not per subscription; one page holds up to 400 subscriptions. 40 reads and 40 deletes (plus restores of archived pages) fit within Pi's per-transaction limits. |
 | Failure | Cleanup never fails, and it never makes the user's action fail. |
 | Backlog | If `more = true`, `total` still includes some ended subscriptions. The approval is then **higher** than needed, never lower. Each further signed call, for example `refresh_approval`, cleans 40 more pages. |
 | Simulation | Simulation and execution see the same past days, so the report matches, except across a UTC midnight. See [10.11](10-security-considerations.md#1011-known-limitation-utc-midnight-between-simulation-and-execution). |
@@ -232,10 +237,16 @@ flowchart TD
   B -- no --> F[advance clean_through to today]
   B -- yes --> C{40 pages done?}
   C -- yes --> M[more = true<br/>advance clean_through to d]
-  C -- no --> D["read Bkt(subscriber, d)<br/>total -= sum of amounts<br/>delete bucket, clear bit"]
+  C -- no --> P{"part 0 of day d<br/>has parts > 0?"}
+  P -- yes --> Q["read BktPart(subscriber, d, parts)<br/>total -= sum of amounts<br/>delete it, parts -= 1"]
+  Q --> C2{40 pages done?}
+  C2 -- yes --> SV[save part 0 with lowered parts<br/>more = true<br/>advance clean_through to d]
+  C2 -- no --> P
+  P -- no --> D["read Bkt(subscriber, d)<br/>total -= sum of amounts<br/>delete part 0, clear bit"]
   D --> B
   F --> R[CleanupReport<br/>event cleanup if days_cleared > 0]
   M --> R
+  SV --> R
   R --> G[the call's own change]
   G --> H["approve(total, expiry from max_close)"]
 ```
@@ -254,6 +265,17 @@ ended = now >= period_end_ts
 Once a subscription has ended, it stays ended: no call can raise its `reserved` or move its `period_end_ts`.
 
 **Day buckets.** Each subscription with budget left is in exactly one bucket: the UTC day its current charge window closes, `day(period_end_ts + period_secs)`. The bucket holds `(sub_id, amount)`, where `amount = (reserved / price) × price`. `Allowance.total` is the sum of every item in the wallet's buckets.
+
+**Overflow parts.** A day's bucket is part 0 (`Bkt`) plus zero or more overflow parts (`BktPart`), each holding at most 400 items. Items are not sorted; the order within a day never matters.
+
+| Operation | How |
+|---|---|
+| Insert | If part 0 has room and there are no overflow parts, append to part 0 (the normal case). Otherwise append to the last part, or create a new part when it is full and raise `parts` in part 0. |
+| Find | Read part 0, then parts 1, 2, … until the `sub_id` is found. A normal day takes one read. |
+| Remove (`cancel`, `extend` updating an amount, a charge moving the item to its next day) | Find the item and swap in the last item of the day's last part. If the last part becomes empty, delete it and lower `parts`. If the whole day becomes empty, delete part 0 and clear the day's bit. |
+| Cleanup | Read and delete every part of a past day, overflow parts first, each counting as one page. A day can be finished across calls. |
+
+With up to 400 items on a day, the cost is the same as without parts. With 1,600, finding an item takes up to 4 reads and inserting takes 2. Each further 400 items on that day adds one read, on that day only.
 
 **What changes `total` and the buckets.**
 

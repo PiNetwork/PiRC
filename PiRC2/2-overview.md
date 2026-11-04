@@ -36,11 +36,11 @@ Anyone can call the read methods.
 **Allowance summary and day buckets.** The Pi token holds one allowance per (subscriber, contract), and only the subscriber's signature can change it. The contract keeps, per wallet:
 
 - an `Allowance` record with `total`, the sum of the budgets that can still be charged;
-- day buckets `Bkt(subscriber, day)`. Each subscription with budget left sits in the bucket of the UTC day its current charge window closes.
+- day buckets `Bkt(subscriber, day)`. Each subscription with budget left sits in the bucket of the UTC day its current charge window closes. A bucket holds up to 400 items; a busier day continues in overflow parts `BktPart(subscriber, day, k)`, so a day never fills up.
 
 A charge moves the subscription to the next period's bucket at once. So an item still in a bucket after its day has passed belongs to a subscription that was not charged in its window, which has ended.
 
-Every call the subscriber signs starts with **cleanup**: it releases whole past days (up to 40 pages per call) without reading any subscription. It then **sets** the allowance to `total`. Between signatures the allowance can be higher than needed; it is never lower. That extra amount cannot be spent. Details in [6.6](6-subscription-lifecycle.md#66-cleanup) and [6.7](6-subscription-lifecycle.md#67-keeping-the-allowance-in-sync).
+Every call the subscriber signs starts with **cleanup**: it releases whole past days (up to 40 pages per call; each part is a page) without reading any subscription. It then **sets** the allowance to `total`. Between signatures the allowance can be higher than needed; it is never lower. That extra amount cannot be spent. Details in [6.6](6-subscription-lifecycle.md#66-cleanup) and [6.7](6-subscription-lifecycle.md#67-keeping-the-allowance-in-sync).
 
 **Wallet index.** `WalletSubs(subscriber, page)` lists every `sub_id` a wallet ever created, 50 per page, including subscriptions created by calling the contract directly. It is append-only.
 
@@ -72,7 +72,7 @@ flowchart TD
   T --> R["save Sub, set ActiveSub<br/>append sub_id to WalletSubs"]
   P --> R
   R --> K{amount > 0?}
-  K -- yes --> BK["add (sub_id, amount) to<br/>Bkt(subscriber, day(deadline))<br/>total += amount, raise max_close"]
+  K -- yes --> BK["add (sub_id, amount) to the bucket of day(deadline)<br/>part 0, or the last part / a new part if full<br/>total += amount, raise max_close"]
   K -- no --> EV
   BK --> EV[event sub_new]
   EV --> AP["token.approve(total, expiry from max_close)<br/>event approval<br/>return SubscribeResult"]
@@ -106,7 +106,7 @@ flowchart TD
   S4 -- yes --> O4[Exhausted]
   S4 -- no --> S5{service Inactive?}
   S5 -- yes --> O5[Ended]
-  S5 -- no --> S5b{"item in<br/>Bkt(subscriber, day(deadline))?"}
+  S5 -- no --> S5b{"item in the bucket of<br/>day(deadline), any part?"}
   S5b -- no --> O5b[Ended]
   S5b -- yes --> S5c{allowance == 0?}
   S5c -- yes --> O5c[ApprovalLost<br/>retried later]
@@ -119,13 +119,13 @@ Every outcome other than `Charged` changes nothing. The allowance is read once p
 
 ### 2.5 Day buckets over time
 
-One wallet with one 30-day subscription, 12 periods budgeted, that is charged once and then never again:
+One wallet with one 30-day subscription, 12 periods budgeted, that is charged once and then never again. Day numbers count from `EPOCH` (2026-01-01 is day 0); `d` is the subscription day.
 
 ```mermaid
 flowchart LR
-  S["subscribe on day 0, no trial<br/>deadline on day 60<br/>Bkt(w, 60): (id, 12 × price)<br/>total = 12 × price"] --> C["charge on day 30<br/>item moves to Bkt(w, 90)<br/>amount 11 × price<br/>total = 11 × price"]
-  C --> M["no charge in days 60–90<br/>window closes on day 90<br/>status Ended"]
-  M --> K["next signed call on day 91 or later<br/>cleanup releases Bkt(w, 90)<br/>total -= 11 × price<br/>approve(total)"]
+  S["subscribe on day d, no trial<br/>deadline on day d+60<br/>Bkt(w, d+60): (id, 12 × price)<br/>total = 12 × price"] --> C["charge on day d+30<br/>item moves to Bkt(w, d+90)<br/>amount 11 × price<br/>total = 11 × price"]
+  C --> M["no charge in days d+60 to d+90<br/>window closes on day d+90<br/>status Ended"]
+  M --> K["next signed call on day d+91 or later<br/>cleanup releases Bkt(w, d+90)<br/>total -= 11 × price<br/>approve(total)"]
 ```
 
 ### 2.6 Status

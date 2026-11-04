@@ -58,18 +58,18 @@ How the contract manages it:
 | Entry | Target: kept live until | Extended by |
 |---|---|---|
 | `Sub`, `Service` | the subscription's window end plus 7 days: `period_end_ts + period_secs + 7 days` | `subscribe`, `extend`, `cancel`, a successful charge |
-| `Bkt(subscriber, day)` | the end of that UTC day plus 7 days | every write to the bucket |
+| `Bkt(subscriber, day)` and its overflow parts `BktPart(subscriber, day, k)` | the end of that UTC day plus 7 days (the same rule for every part) | every write to that part |
 | `Allowance(subscriber)` | `max_close + 7 days` | every write to the record |
 | `Executor(service_id)` | as the `Service` | a successful charge made by the executor |
 | `WalletSubs`, `WalletSubCount` | minimum TTL | never; the `subscribe` that appends restores an archived page or count |
 - `register_service` does not extend the new `Service`; it starts at the network minimum.
 - `ActiveSub` and `TrialUsed` are written once at the network minimum and never extended.
-- Ended subscriptions are allowed to archive. Cleanup restores an archived past bucket when it releases it; that counts as a disk read.
+- Ended subscriptions are allowed to archive. Cleanup restores an archived past bucket part when it releases it; each counts as a disk read.
 
 | Entry | Storage | When it expires | Recoverable? |
 |---|---|---|---|
 | Token allowance | temporary | At its expiration ledger: at most about 180 days after the last approve | **No.** It is deleted. Only the subscriber can set a new one, with any signed call (`refresh_approval` is the simplest). If it lapses while a subscription is still live, that subscription's charges return `ApprovalLost` (nothing changes, retried) until the subscriber's next signed call re-approves `total`. |
-| `Sub`, `Service`, `Allowance`, current `Bkt` pages | persistent | Kept live by charges and writes | Yes |
+| `Sub`, `Service`, `Allowance`, current `Bkt` and `BktPart` parts | persistent | Kept live by charges and writes | Yes |
 | `WalletSubs` pages, `WalletSubCount` | persistent | Archive after the minimum TTL | Yes: still readable; restored by the next `subscribe` |
 | An ended subscription's entries, `ActiveSub`, `TrialUsed` | persistent | Archive after their TTL | Yes |
 | Contract instance and code | instance / code | If nobody extends them | Yes |
@@ -124,7 +124,7 @@ The admin role itself moves only through a two-step handover.
 
 - No limit on live subscriptions per wallet. A signed call with nothing to clean touches about 5–8 ledger entries, whatever the number of live subscriptions (estimate; to be measured).
 - Cleanup releases at most 40 day pages per signed call (up to about 90 entries with a full backlog). The rest waits for the next signed call.
-- One wallet's bucket for one day is a single ledger entry, limited to 64 KB: roughly 1,600 subscriptions of one wallet whose windows close on the same UTC day. Beyond that the write fails.
+- A day bucket never fills up. Each part holds at most 400 items (about 16 KB, under Soroban's 64 KB entry limit), and more items for the same wallet and day go into overflow parts. Up to 400 items on a day costs the same as one part. With 1,600, finding an item takes up to 4 reads and inserting takes 2; each further 400 adds one read, on that day only.
 - At most 15 items per `process` call (`ProcessLimitTooHigh`), sized for Pi Testnet's per-transaction limits.
 - `get_subscriptions` reads at most 50 ids per call (`TooManyIds`).
 

@@ -12,6 +12,7 @@ Every stored record is a versioned enum from the first release:
 | `SubRecord` | `V1(SubV1)` |
 | `AllowanceRecord` | `V1(AllowanceV1)` |
 | `BucketRecord` | `V1(BucketV1)` |
+| `BucketPartRecord` | `V1(BucketPartV1)` |
 
 The wallet index (`WalletSubs` pages and `WalletSubCount`) holds plain values. It is append-only and its shape never changes.
 
@@ -79,13 +80,22 @@ The bitmap means the contract never probes empty days.
 
 #### `BucketV1`
 
-Stored at `Bkt(subscriber, day)` as `BucketRecord::V1`.
+Part 0 of a day bucket. Stored at `Bkt(subscriber, day)` as `BucketRecord::V1`.
 
 | Field | Type | Description |
 |---|---|---|
-| `items` | `Vec<(u64, i128)>` | `(sub_id, amount)` for each of the wallet's subscriptions whose **current** charge window closes on this UTC day. Order is not significant. |
+| `items` | `Vec<(u64, i128)>` | `(sub_id, amount)` for the wallet's subscriptions whose **current** charge window closes on this UTC day. At most 400 items. Unsorted. |
+| `parts` | `u32` | Number of overflow parts for this day. Normally 0. |
 
-A bucket with no items does not exist. Size is about 180 bytes plus about 40 bytes per item. Soroban's 64 KB entry limit allows roughly 1,600 items for one wallet on one day.
+#### `BucketPartV1`
+
+An overflow part of a day bucket, used only when one wallet has more than 400 subscriptions whose windows close on the same day. Stored at `BktPart(subscriber, day, k)` for `k = 1 … parts`, as `BucketPartRecord::V1`.
+
+| Field | Type | Description |
+|---|---|---|
+| `items` | `Vec<(u64, i128)>` | Up to 400 more `(sub_id, amount)` items for the same day. Unsorted. |
+
+A day's bucket is part 0 together with its overflow parts. Every existing part holds at least one item, and a day with no items does not exist. A part is about 180 bytes plus about 40 bytes per item, so a full part (400 items, about 16 KB) stays well under Soroban's 64 KB entry limit. The bitmap in `AllowanceV1` is per day; parts do not appear in it.
 
 #### Wallet index
 
@@ -117,7 +127,8 @@ A bucket with no items does not exist. Size is about 180 bytes plus about 40 byt
 | `TrialUsed(Address, u64)` | persistent | `bool` (`true`) | Set once a trial is granted for (subscriber, service) |
 | `Executor(u64)` | persistent | `Address` | Optional process-only key for a service; removed when unset |
 | `Allowance(Address)` | persistent | `AllowanceRecord` | Per-wallet allowance summary; removed when `total` is 0 |
-| `Bkt(Address, u32)` | persistent | `BucketRecord` | Day bucket: (subscriber, day) |
+| `Bkt(Address, u32)` | persistent | `BucketRecord` | Day bucket, part 0: (subscriber, day) |
+| `BktPart(Address, u32, u32)` | persistent | `BucketPartRecord` | Day bucket, overflow part: (subscriber, day, k), `k = 1 … parts` |
 | `WalletSubs(Address, u32)` | persistent | `Vec<u64>` | Wallet index page: (subscriber, page) |
 | `WalletSubCount(Address)` | persistent | `u64` | Wallet index size |
 
@@ -127,14 +138,14 @@ Not stored: status, end reason, names, per-service or per-merchant lists.
 
 | Term | Definition |
 |---|---|
-| `EPOCH` | `1,794,960,000` = 2026-11-18T00:00:00Z, which is day 0 |
-| `day(ts)` | `(ts − EPOCH) / 86,400`, rounded down. Times before `EPOCH` count as day 0. |
+| `EPOCH` | `1,767,225,600` = 2026-01-01T00:00:00Z, which is day 0. It is already past, so every real deadline falls on day 0 or later. |
+| `day(ts)` | `(ts − EPOCH) / 86,400`, rounded down. Times before `EPOCH` count as day 0 (a defensive rule; it does not occur in practice). |
 | `today` | `day(now)` |
 | `deadline` | `period_end_ts + period_secs`: when the current charge window closes |
 | `amount` | `(reserved / price) × price`: the whole-price budget that can still be charged |
 | `final_close` | `deadline + (amount / price − 1) × period_secs`: the last window close if every charge lands (only when `amount > 0`) |
 
-Placement rule: every subscription with `amount > 0` has exactly one item, in `Bkt(subscriber, day(deadline))`. A subscription with `amount = 0` (no periods budgeted, cancelled, or used up) is in no bucket.
+Placement rule: every subscription with `amount > 0` has exactly one item, in the bucket of `day(deadline)`: in part 0 or in one overflow part. A subscription with `amount = 0` (no periods budgeted, cancelled, or used up) is in no bucket.
 
 ### 3.3 Views and results
 
@@ -191,7 +202,7 @@ Returned by every subscriber-signed call, and emitted as the `cleanup` event whe
 
 | Field | Type | Description |
 |---|---|---|
-| `days_cleared` | `u32` | Past day buckets released by this call (at most 40) |
+| `days_cleared` | `u32` | Past days fully released by this call. Each part counts as one page, at most 40 pages per call. |
 | `released` | `i128` | Amount removed from `total` |
 | `more` | `bool` | Past buckets are still left. The approval is higher than needed until they are cleaned. |
 
@@ -222,7 +233,7 @@ Only `Charged` changes anything. Every other outcome leaves the subscription and
 | `AlreadyHandled` | `expected_period_end` or `service_id` does not match: already charged, or the wrong service |
 | `Stale` | The window closed without a charge. The subscription has ended; cleanup releases its item. |
 | `Exhausted` | `reserved < price` |
-| `Ended` | The service is `Inactive`, or the subscription has no item in its deadline's bucket, or the `sub_id` does not exist |
+| `Ended` | The service is `Inactive`, or the subscription has no item in its deadline's day bucket (any part), or the `sub_id` does not exist |
 | `ChargeFailed` | The allowance is not 0, but the token refused `transfer_from` (low balance, or an allowance lowered below the price). The subscription stays `Due` and can be retried until its window closes. |
 | `ApprovalLost` | The token allowance is 0 (expired or revoked). The subscription stays `Due` and can be retried until its window closes. Any call the subscriber signs re-approves `total`, so a later retry can succeed. |
 
