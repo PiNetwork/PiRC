@@ -24,8 +24,8 @@ Steps, in order:
 5. Decide trial or first payment (below) and compute `period_end_ts` (`TimestampOverflow`).
 6. Approval horizon ([6.6](#66-the-shared-allowance)): `check_horizon(period_end_ts, k = periods)`, else `BeyondApprovalHorizon`. This runs before `TrialUsed` is set and before the first payment.
 7. Set `TrialUsed`, or make the first payment.
-8. Save the subscription. Set `ActiveSub(subscriber, service_id) = sub_id`.
-9. Append `sub_id` to the wallet index (`WalletSubs`, `WalletSubCount`). Emit `sub_new`.
+8. Save the subscription with `created_ts = now`. `created_ts` is never changed afterwards. Set `ActiveSub(subscriber, service_id) = sub_id`.
+9. Append `sub_id` to the wallet index (`WalletSubs`, `WalletSubCount`). Emit `sub_new` (with `created_ts`).
 10. `approve(subscriber, contract, amount, cap expiry)`. Emit `approval`.
 
 There is no limit on the number of live subscriptions per wallet.
@@ -58,7 +58,7 @@ For this service the most a subscriber can budget is 4 periods without a trial, 
 
 **Errors:** `ServiceNotFound`, `ServiceNotOpen`, `AlreadySubscribed`, `AmountOverflow`, `TimestampOverflow`, `BeyondApprovalHorizon`. The call also fails if the token refuses the first payment (for example, low balance).
 
-**Events:** `sub_new` (`amount` = first payment, 0 for a trial), `approval`
+**Events:** `sub_new` (`amount` = first payment, 0 for a trial; includes `created_ts`), `approval`
 
 ### 6.2 Extend
 

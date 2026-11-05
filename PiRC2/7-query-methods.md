@@ -7,7 +7,7 @@ The contract keeps no per-service or per-merchant lists. For each wallet it keep
 | Method | Returns | Notes | Errors |
 |---|---|---|---|
 | `get_service(service_id: u64)` | `ServiceView` | Terms and state | `ServiceNotFound` |
-| `get_subscription(sub_id: u64)` | `SubscriptionView` | Stored fields plus `status` | `SubscriptionNotFound`, `ServiceNotFound` |
+| `get_subscription(sub_id: u64)` | `SubscriptionView` | Stored fields (including `created_ts`) plus `status` | `SubscriptionNotFound`, `ServiceNotFound` |
 | `get_subscriptions(sub_ids: Vec<u64>)` | `Vec<SubscriptionView>` | Up to 50 ids per call. Ids whose subscription or service is missing are skipped, so the result can be shorter than the input; match results by `sub_id`. | `TooManyIds` |
 | `get_wallet_sub_ids(subscriber: Address, page: u32)` | `Vec<u64>` | Up to 50 `sub_id`s in creation order. Page `p` holds ids `50p` to `50p + 49`. A missing page returns an empty list. | — |
 | `get_wallet_sub_count(subscriber: Address)` | `u64` | Number of subscriptions the wallet ever created. The last page is `count / 50`, rounded down. | — |

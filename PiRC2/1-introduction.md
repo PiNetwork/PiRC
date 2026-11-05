@@ -46,7 +46,7 @@ The contract in this version is a new deployment. It does not upgrade or migrate
 | Only the merchant can bill | The merchant or a process-only executor key can bill |
 | Allowance only ever added to | Allowance adjusted on top of the token's current value: plus the budget added, minus the budget cancelled, expiry always at the cap. Each charge is bounded by its subscription's own budget. |
 | Subscription and service lists on-chain; `get_subscriber_subs`, `get_merchant_subs`, `get_merchant_services` | No per-service or per-merchant lists. Per wallet: an append-only index of every `sub_id` the wallet created (`get_wallet_sub_ids`) |
-| `name`, `is_active`, `created_at`, `next_charge_ts`, `service_end_ts`, price copied into each subscription | Service holds only its terms and `state`; subscription holds `period_end_ts`, `reserved`, `paid_periods` |
+| `name`, `is_active`, `created_at`, `next_charge_ts`, `service_end_ts`, price copied into each subscription | Service holds only its terms and `state`; subscription holds `period_end_ts`, `reserved`, `paid_periods` and its creation time `created_ts` |
 | Service `is_active` | `state`: `Open`, `SignupsClosed` or `Inactive` (final) |
 | Stored status | Status derived when read: `Trial`, `Paid`, `Due`, `Ended` |
 | Bare structs in storage | Versioned records (`V1`), append-only enums and error codes |

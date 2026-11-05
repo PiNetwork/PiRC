@@ -60,6 +60,9 @@ Stored at `Sub(sub_id)` as `SubRecord::V1`. It is the only source of truth for a
 | `period_end_ts` | `u64` | End of the paid or trial period, and the start of the next charge window |
 | `reserved` | `i128` | Approved budget left; always a multiple of `price` |
 | `paid_periods` | `u32` | Number of periods paid; 0 during a free trial |
+| `created_ts` | `u64` | Ledger timestamp of the `subscribe` that created it. Set once, never changed. The last field of `SubV1`. |
+
+A stored `Sub` value is about 288 bytes (`created_ts` adds 32 bytes: an XDR map key plus a `u64`).
 
 #### Wallet index
 
@@ -125,6 +128,7 @@ Read methods return these. They are never stored.
 | `period_end_ts` | `u64` | As stored |
 | `reserved` | `i128` | As stored |
 | `paid_periods` | `u32` | As stored |
+| `created_ts` | `u64` | As stored: when the subscription was created |
 | `status` | `SubStatus` | Derived at read time from the stored fields, the service and the clock |
 
 `status` does not look at the token. A `Due` subscription whose allowance has expired or been revoked still reads `Due`; its charge returns `ApprovalLost` until the subscriber signs any call. To know whether the next charge can land, read the token's allowance entry (`["Allowance", {from, spender}]` → `{amount, live_until_ledger}`) for its amount and expiry.
@@ -182,7 +186,7 @@ Every event payload is a struct (a map), except `upgrade` and `admin`, which are
 | `svc_reg` | `[svc_reg, merchant]` | `register_service` | `ServiceRegisteredEvent` |
 | `svc_state` | `[svc_state, merchant]` | `set_service_state`, only when the state changes | `ServiceStateEvent` |
 | `exec_set` | `[exec_set, merchant]` | `set_executor` | `ExecutorEvent` |
-| `sub_new` | `[sub_new, subscriber]` | `subscribe` | `SubEvent` |
+| `sub_new` | `[sub_new, subscriber]` | `subscribe` | `SubNewEvent` |
 | `sub_ext` | `[sub_ext, subscriber]` | `extend` | `SubEvent` |
 | `sub_cncl` | `[sub_cncl, subscriber]` | `cancel`, only when it releases budget | `SubEvent` |
 | `charged` | `[charged, subscriber]` | `process`, on each successful charge | `ChargedEvent` |
@@ -200,15 +204,17 @@ Payload structs:
 | `ServiceStateEvent` | `service_id: u64`, `state: ServiceState` |
 | `ExecutorEvent` | `service_id: u64`, `executor: Vec<Address>`: one element when set, empty when removed |
 | `SubEvent` | `sub_id: u64`, `service_id: u64`, `amount: i128`, `period_end_ts: u64`, `reserved: i128`, `paid_periods: u32` |
+| `SubNewEvent` | `sub_id: u64`, `service_id: u64`, `amount: i128`, `period_end_ts: u64`, `reserved: i128`, `paid_periods: u32`, `created_ts: u64` |
 | `ChargedEvent` | `sub_id: u64`, `service_id: u64`, `amount: i128`, `period_end_ts: u64`, `reserved: i128`, `paid_periods: u32` |
 | `ApprovalEvent` | `amount: i128`, `expiration_ledger: u32` |
 | `LowFundsEvent` | `sub_id: u64`, `available: i128` |
 
 Field notes:
 
-- `SubEvent.amount` is the first payment for `sub_new` (0 for a trial), the budget added for `sub_ext`, and the budget released for `sub_cncl`.
+- `SubNewEvent.amount` is the first payment (0 for a trial). `SubEvent.amount` is the budget added for `sub_ext` and the budget released for `sub_cncl`.
 - `ChargedEvent.amount` is the price charged. The payee is the service's merchant, fixed by `service_id`, and also named in the token's own `transfer` event.
-- `period_end_ts`, `reserved` and `paid_periods` in `SubEvent` and `ChargedEvent` are the values after the change.
+- `period_end_ts`, `reserved` and `paid_periods` in `SubNewEvent`, `SubEvent` and `ChargedEvent` are the values after the change.
+- `created_ts` appears in `sub_new` (`SubNewEvent`) only. `sub_ext`, `sub_cncl` and `charged` do not carry it; it never changes, so off-chain readers take it from `sub_new` or from `get_subscription`.
 - `ApprovalEvent` mirrors the `approve` just made: the new total amount and the expiration ledger (both 0 on revoke).
 - `LowFundsEvent.available` is the token balance (`low_bal`) or the allowance (`low_alw`) after the charge. The allowance is read once per subscriber per `process` call and lowered by each charge in that call. The `charged` event just before it carries the full resulting state.
 

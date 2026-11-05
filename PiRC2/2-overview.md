@@ -69,7 +69,7 @@ flowchart TD
   I -- no --> T["Trial<br/>period_end_ts = now + trial_period_secs<br/>paid_periods = 0<br/>set TrialUsed"]
   I -- yes --> P
   H -- no --> P["First payment<br/>token.transfer price: subscriber to merchant<br/>period_end_ts = now + period_secs<br/>paid_periods = 1"]
-  T --> R["save Sub, set ActiveSub<br/>append sub_id to WalletSubs<br/>event sub_new"]
+  T --> R["save Sub (created_ts = now)<br/>set ActiveSub<br/>append sub_id to WalletSubs<br/>event sub_new"]
   P --> R
   R --> AP["current = token.allowance(subscriber, contract)<br/>approve(current + price × periods, cap expiry)<br/>event approval<br/>return sub_id"]
 ```
