@@ -1,372 +1,313 @@
 ## 9. Subscription Setup Guide
 
-Contract: CCUF75B6W3HRJTJD6O7OXNI72HGJ7DERZ5MUNOMFMSK23ME5GUIKPFYV
-Network: Pi Testnet
-RPC: https://rpc.testnet.minepi.com
+This guide calls the contract from the command line on Pi Testnet with the Stellar CLI.
 
-Environment Setup
+> **The new contract is not deployed yet.** Its Pi Testnet address will be announced. Until then, the examples use `$CONTRACT_ID` as a placeholder. You can deploy your own copy from the reference implementation to try them (9.3).
+>
+> The contract at `CCUF75B6W3HRJTJD6O7OXNI72HGJ7DERZ5MUNOMFMSK23ME5GUIKPFYV`, used by the earlier draft, is deprecated. Its methods (`pay_upfront`, `toggle_pay_upfront`, `extend_subscription`, `process(merchant, service_id)`, list queries) do not exist on the new contract.
 
-1. Install Stellar CLI
+Most apps should not call the contract directly: use `Pi.Subscriptions.subscribe` from the Pi SDK ([1.5](1-introduction.md#15-how-apps-use-it)). This guide is for reviewers, merchants testing billing, and tool builders.
 
+### 9.1 Environment setup
+
+**1. Install the Stellar CLI**
+
+```bash
 # macOS
 brew install stellar-cli
 # Linux / Windows (WSL)
-cargo install --locked stellar-cli --features opt
+cargo install --locked stellar-cli
+```
 
-Full guide: Install the CLI | Stellar Docs
+Full guide: [Install the CLI | Stellar Docs](https://developers.stellar.org/docs/tools/cli/install-cli).
 
-2. Configure Pi Testnet
+**2. Add Pi Testnet**
 
-Create the file ~/.stellar/network/pi-testnet.toml:
+```bash
+stellar network add pi-testnet \
+  --rpc-url https://rpc.testnet.minepi.com \
+  --network-passphrase "Pi Testnet"
+```
 
+Or create `~/.stellar/network/pi-testnet.toml`:
+
+```toml
 rpc_url = "https://rpc.testnet.minepi.com"
 rpc_headers = []
 network_passphrase = "Pi Testnet"
+```
 
-3. Environment Variables (optional, for convenience)
+**3. Create identities**
 
-export CONTRACT_ID=CCUF75B6W3HRJTJD6O7OXNI72HGJ7DERZ5MUNOMFMSK23ME5GUIKPFYV
+```bash
+stellar keys generate merchant
+stellar keys generate subscriber
+stellar keys generate executor     # optional: process-only billing key
+```
+
+Fund each address with Testnet Pi before use. Fees are paid by the transaction's source account: the subscriber pays for its own calls, and the merchant or executor pays for `process`.
+
+**4. Environment variables**
+
+```bash
 export NETWORK=pi-testnet
+export CONTRACT_ID=<SUBSCRIPTION_CONTRACT_ID>      # announced at deploy
+export MERCHANT=$(stellar keys address merchant)
+export SUBSCRIBER=$(stellar keys address subscriber)
+export EXECUTOR=$(stellar keys address executor)
+```
 
-Error Codes
+Amounts are in the token's smallest unit. Pi has 7 decimal places: `10000000` = 1 Pi. Times are in seconds.
 
-| Code | Name               | Description                                                    |
-|------|--------------------|----------------------------------------------------------------|
-| 1    | InvalidPrice       | Price must be greater than 0                                   |
-| 2    | InvalidPeriod      | Period must be greater than 0; approve_periods must also be > 0|
-| 3    | AlreadySubscribed  | Active subscription already exists, or free trial already used |
-| 4    | SubscriptionNotFound | No subscription found with the given ID                      |
-| 5    | ServiceNotFound    | No service found with the given ID                             |
-| 6    | Unauthorized       | Caller is not the owner of the subscription                    |
-| 7    | AlreadyCancelled   | Subscription is already cancelled (auto_renew = false)         |
-| 8    | TimestampOverflow  | Overflow when computing timestamps                             |
-| 9    | NotServiceOwner    | Caller is not the owner of the service                         |
-| 10   | InvalidServiceName | Service name cannot be empty                                   |
-| 11   | SubscriptionExpired| Subscription has expired                                       |
-| 12   | ServiceNotActive   | Service has been deactivated                                   |
+### 9.2 Typical flow
 
-Contract Methods
+```
+1. Merchant:   register_service(merchant, price, period_secs, trial_period_secs)  -> service_id
+2. Merchant:   set_executor(merchant, service_id, executor)                       (optional)
+3. Subscriber: subscribe(subscriber, service_id, periods, claim_trial)            -> sub_id
+               trial, or first payment now;
+               allowance = current + price × periods (cap expiry)
+4. Billing:    get_subscription(sub_id)                                           -> period_end_ts
+               once period_end_ts has passed (status Due):
+               process(caller, service_id, [{sub_id, expected_period_end}])       -> [{sub_id, outcome}]
+5. Subscriber: extend(subscriber, sub_id, periods, expected_period_end)           add periods;
+                                                                                  allowance += price × periods
+               refresh_approval(subscriber)                                       renew the expiry only
+6. Subscriber: cancel(subscriber, sub_id)                                         no more charges; allowance −= remaining budget;
+                                                                                  access lasts to period_end_ts
+```
 
-register_service — Register a Service
+### 9.3 Deploy your own copy (optional)
 
-Creates a new paid service. Called by the merchant.
+Build the WASM from the reference implementation (`PiCoreTeam/pi-smartcontracts`, `contracts/subscription`, PR #5):
 
-Parameters:
+```bash
+stellar contract build    # -> target/wasm32v1-none/release/subscription.wasm
+```
 
-| Parameter        | Type    | Description                              |
-|------------------|---------|------------------------------------------|
-| merchant         | Address | Merchant address (requires auth)         |
-| name             | String  | Service name (must not be empty)         |
-| price            | i128    | Price per period in token units (> 0)    |
-| period_secs      | u64     | Period duration in seconds (> 0)         |
-| trial_period_secs| u64     | Trial duration in seconds (0 = no trial) |
-| approve_periods  | u64     | Number of periods to pre-approve (> 0)   |
+Then deploy it with the Pi native token as the payment token:
 
-Returns: Service object
+```bash
+export TOKEN_ID=$(stellar contract id asset --asset native --network $NETWORK)
+
+stellar contract deploy \
+  --wasm target/wasm32v1-none/release/subscription.wasm \
+  --source merchant \
+  --network $NETWORK \
+  -- \
+  --admin $MERCHANT \
+  --token $TOKEN_ID
+```
+
+The command prints the new contract id. Use it as `$CONTRACT_ID`.
+
+### 9.4 Merchant: register and manage a service
+
+**Register a service.** 5 Pi every 30 days, with a 7-day free trial. Returns the `service_id`.
 
 ```bash
 stellar contract invoke \
   --id $CONTRACT_ID \
   --network $NETWORK \
-  -s <PRIVATE_KEY> \
+  --source merchant \
   -- register_service \
-  --merchant <MERCHANT_PUBLIC_KEY> \
-  --name "Premium Plan" \
-  --price 10000000 \
+  --merchant $MERCHANT \
+  --price 50000000 \
   --period_secs 2592000 \
-  --trial_period_secs 604800 \
-  --approve_periods 3
+  --trial_period_secs 604800
 ```
 
-price is in the smallest token unit. For Pi with 7 decimal places: 10000000 = 1 Pi.
+Use `--trial_period_secs 0` for no trial.
 
-subscribe — Subscribe to a Service
-
-Subscribes a user to a service. Called by the subscriber.
-
-Parameters:
-
-| Parameter  | Type    | Description                              |
-|------------|---------|------------------------------------------|
-| subscriber | Address | Subscriber address (requires auth)       |
-| service_id | u64     | Service ID                               |
-| auto_renew | bool    | Enable automatic renewal via process()   |
-
-Behavior matrix:
-
-|               | auto_renew = true                                                                             | auto_renew = false                                                                  |
-|---------------|-----------------------------------------------------------------------------------------------|-------------------------------------------------------------------------------------|
-| With trial    | Approves approve_periods + trial duration. No immediate payment. Charges begin after trial.   | Trial only. No approval, no payment. Expires when trial ends.                       |
-| Without trial | Immediately transfers first period + approves approve_periods periods.                        | Immediately transfers first period + approves 1 period. Will not auto-renew.        |
-
-Returns: Subscription object
+**Set an executor.** Lets the executor key call `process` for this service.
 
 ```bash
-# With auto-renewal
 stellar contract invoke \
   --id $CONTRACT_ID \
   --network $NETWORK \
-  -s <PRIVATE_KEY> \
-  -- subscribe \
-  --subscriber <SUBSCRIBER_PUBLIC_KEY> \
+  --source merchant \
+  -- set_executor \
+  --merchant $MERCHANT \
   --service_id 0 \
-  --auto_renew true
+  --executor $EXECUTOR
 ```
 
+Omit `--executor` to pass `None` and remove the executor.
+
+**Close or reopen sign-ups, or stop the service.**
+
 ```bash
-# Without auto-renewal (single period or trial only)
 stellar contract invoke \
   --id $CONTRACT_ID \
   --network $NETWORK \
-  -s <PRIVATE_KEY> \
-  -- subscribe \
-  --subscriber <SUBSCRIBER_PUBLIC_KEY> \
+  --source merchant \
+  -- set_service_state \
+  --merchant $MERCHANT \
   --service_id 0 \
-  --auto_renew false
+  --state '"SignupsClosed"'
 ```
 
-cancel — Cancel a Subscription
+Valid values: `"Open"`, `"SignupsClosed"`, `"Inactive"`. `"Inactive"` is final.
 
-Disables auto-renewal. Any remaining paid time is preserved.
+### 9.5 Subscriber: subscribe, extend, cancel
 
-Parameters:
-
-| Parameter  | Type    | Description                              |
-|------------|---------|------------------------------------------|
-| subscriber | Address | Subscriber address (requires auth)       |
-| sub_id     | u64     | Subscription ID                          |
+**Subscribe** with a budget of 4 periods and claim the trial. Returns the `sub_id`.
 
 ```bash
 stellar contract invoke \
   --id $CONTRACT_ID \
   --network $NETWORK \
-  -s <PRIVATE_KEY> \
+  --source subscriber \
+  -- subscribe \
+  --subscriber $SUBSCRIBER \
+  --service_id 0 \
+  --periods 4 \
+  --claim_trial true
+```
+
+With a trial: nothing is paid now; `period_end_ts` is 7 days from now. Without a trial (or with `--claim_trial false`): 5 Pi goes to the merchant now; `period_end_ts` is 30 days from now. Either way `reserved` is 20 Pi, and the allowance becomes its current value plus 20 Pi, with the cap expiry (about 180 days).
+
+The budget is limited by the approval horizon: the last budgeted charge window must close within about 173 days. At `subscribe` the first period counts too. For this 30-day service that is at most 5 periods with the 7-day trial, or 4 without; `--periods 6` with the trial, or `--periods 5` without, fails with `BeyondApprovalHorizon`. A service with a period above about 86.5 days accepts no prepaid budget at `subscribe` without a trial ([6.6](6-subscription-lifecycle.md#66-the-shared-allowance)).
+
+Check first whether the trial is still available:
+
+```bash
+stellar contract invoke --id $CONTRACT_ID --network $NETWORK --source subscriber \
+  -- has_used_trial --subscriber $SUBSCRIBER --service_id 0
+```
+
+**Extend** by 1 period. Pass the current `period_end_ts` from `get_subscription`. Only a subscription that has not ended can be extended. The allowance grows by the same `price × periods`. `--periods 0` only renews the allowance's expiry. The horizon counts the whole budget after the call: this example (5 periods after a 7-day trial, last window at day 157) passes, but the same `extend` on the no-trial subscription (last window at day 180) fails with `BeyondApprovalHorizon`.
+
+```bash
+stellar contract invoke \
+  --id $CONTRACT_ID \
+  --network $NETWORK \
+  --source subscriber \
+  -- extend \
+  --subscriber $SUBSCRIBER \
+  --sub_id 0 \
+  --periods 1 \
+  --expected_period_end <PERIOD_END_TS>
+```
+
+Fails with `PeriodMismatch` if a charge moved `period_end_ts` since you read it. Read again and retry.
+
+**Refresh the approval**: renew the allowance's expiry at the same amount. It does not help once the allowance is 0; use `extend` on the subscriptions to keep instead.
+
+```bash
+stellar contract invoke \
+  --id $CONTRACT_ID \
+  --network $NETWORK \
+  --source subscriber \
+  -- refresh_approval \
+  --subscriber $SUBSCRIBER
+```
+
+**Cancel.** No more charges; access lasts to `period_end_ts`.
+
+```bash
+stellar contract invoke \
+  --id $CONTRACT_ID \
+  --network $NETWORK \
+  --source subscriber \
   -- cancel \
-  --subscriber <SUBSCRIBER_PUBLIC_KEY> \
+  --subscriber $SUBSCRIBER \
   --sub_id 0
 ```
 
-Returns AlreadyCancelled if auto_renew is already false.
+### 9.6 Billing: process
 
-toggle_auto_renew — Toggle Auto-Renewal
+Read the subscription to get its `period_end_ts`:
 
-Flips auto_renew on or off. Cannot be re-enabled on an expired subscription.
+```bash
+stellar contract invoke --id $CONTRACT_ID --network $NETWORK --source executor \
+  -- get_subscription --sub_id 0
+```
 
-Parameters:
-
-| Parameter  | Type    | Description                              |
-|------------|---------|------------------------------------------|
-| subscriber | Address | Subscriber address (requires auth)       |
-| sub_id     | u64     | Subscription ID                          |
-
-Returns: bool — new value of auto_renew
+Once `now >= period_end_ts` (status `Due`), charge it. Each item carries the `period_end_ts` you read as `expected_period_end`. Up to 15 items per call.
 
 ```bash
 stellar contract invoke \
   --id $CONTRACT_ID \
   --network $NETWORK \
-  -s <PRIVATE_KEY> \
-  -- toggle_auto_renew \
-  --subscriber <SUBSCRIBER_PUBLIC_KEY> \
-  --sub_id 0
-```
-
-When re-enabling, automatically refreshes the token approval for approve_periods periods.
-
-extend_subscription — Refresh Token Approval
-
-Renews the token allowance without changing the subscription period. Use this when the allowance is running low.
-
-Parameters:
-
-| Parameter  | Type    | Description                              |
-|------------|---------|------------------------------------------|
-| subscriber | Address | Subscriber address (requires auth)       |
-| sub_id     | u64     | Subscription ID                          |
-
-Returns: updated Subscription object
-
-```bash
-stellar contract invoke \
-  --id $CONTRACT_ID \
-  --network $NETWORK \
-  -s <PRIVATE_KEY> \
-  -- extend_subscription \
-  --subscriber <SUBSCRIBER_PUBLIC_KEY> \
-  --sub_id 0
-```
-
-Sets auto_renew = true and issues a fresh approval for approve_periods periods.
-
-process — Process Payments
-
-Charges all due subscribers of a service. Called by the merchant (or an automated service).
-
-Parameters:
-
-| Parameter  | Type    | Description                              |
-|------------|---------|------------------------------------------|
-| merchant   | Address | Merchant address (requires auth)         |
-| service_id | u64     | Service ID                               |
-| offset     | u32     | Pagination offset                        |
-| limit      | u32     | Number of subscriptions to process       |
-
-Returns: ProcessResult object (charged, failed, skipped, total)
-
-```bash
-# Process first 50 subscriptions
-stellar contract invoke \
-  --id $CONTRACT_ID \
-  --network $NETWORK \
-  -s <PRIVATE_KEY> \
+  --source executor \
   -- process \
-  --merchant <MERCHANT_PUBLIC_KEY> \
+  --caller $EXECUTOR \
   --service_id 0 \
-  --offset 0 \
-  --limit 50
+  --items '[{"sub_id":0,"expected_period_end":<PERIOD_END_TS>},{"sub_id":1,"expected_period_end":<PERIOD_END_TS_1>}]'
 ```
 
-```bash
-# Next page
-stellar contract invoke \
-  --id $CONTRACT_ID \
-  --network $NETWORK \
-  -s <PRIVATE_KEY> \
-  -- process \
-  --merchant <MERCHANT_PUBLIC_KEY> \
-  --service_id 0 \
-  --offset 50 \
-  --limit 50
+The merchant can run the same call with `--source merchant --caller $MERCHANT`.
+
+The result lists one outcome per item, for example:
+
+```json
+[{"sub_id":0,"outcome":"Charged"},{"sub_id":1,"outcome":"NotDue"}]
 ```
 
-If a payment fails, auto_renew is set to false for that subscription automatically.
+Running the same command again returns `AlreadyHandled` for item 0 and charges nothing. An item that returns `ChargeFailed` is unchanged: send it again in a later run, with the same `expected_period_end`, until its window closes. An item that returns `ApprovalLost` is also unchanged: the subscriber's allowance is 0 (expired or revoked). Retry it after the subscriber adds allowance back with `subscribe` or `extend` (or a direct `approve`). Only a successful charge changes anything. See [6.5](6-subscription-lifecycle.md#65-process-batch-charge) for every outcome.
 
-Read-Only Queries
+### 9.7 Reads
 
-get_service — Get a Service
-
-```bash
-stellar contract invoke \
-  --id $CONTRACT_ID \
-  --network $NETWORK \
-  -- get_service \
-  --service_id 0
-```
-
-get_merchant_services — List All Services for a Merchant
+Reads are simulated, not submitted. Any funded identity can be the source.
 
 ```bash
-stellar contract invoke \
-  --id $CONTRACT_ID \
-  --network $NETWORK \
-  -- get_merchant_services \
-  --merchant <MERCHANT_PUBLIC_KEY>
-```
+# Service terms and state
+stellar contract invoke --id $CONTRACT_ID --network $NETWORK --source subscriber \
+  -- get_service --service_id 0
 
-get_subscription — Get a Subscription
+# One subscription, with its derived status
+stellar contract invoke --id $CONTRACT_ID --network $NETWORK --source subscriber \
+  -- get_subscription --sub_id 0
 
-Only accessible by the subscriber or the service's merchant.
+# Several subscriptions (up to 50; missing ids skipped)
+stellar contract invoke --id $CONTRACT_ID --network $NETWORK --source subscriber \
+  -- get_subscriptions --sub_ids '[0,1,2]'
 
-```bash
-stellar contract invoke \
-  --id $CONTRACT_ID \
-  --network $NETWORK \
-  -s <PRIVATE_KEY> \
-  -- get_subscription \
-  --caller <CALLER_PUBLIC_KEY> \
-  --sub_id 0
-```
+# Every subscription the wallet ever created: count, then pages of 50 ids
+stellar contract invoke --id $CONTRACT_ID --network $NETWORK --source subscriber \
+  -- get_wallet_sub_count --subscriber $SUBSCRIBER
+stellar contract invoke --id $CONTRACT_ID --network $NETWORK --source subscriber \
+  -- get_wallet_sub_ids --subscriber $SUBSCRIBER --page 0
 
-get_subscriber_subs — List All Subscriptions for a Subscriber
+# The subscription recorded for (subscriber, service)
+stellar contract invoke --id $CONTRACT_ID --network $NETWORK --source subscriber \
+  -- get_active_sub --subscriber $SUBSCRIBER --service_id 0
 
-```bash
-stellar contract invoke \
-  --id $CONTRACT_ID \
-  --network $NETWORK \
-  -s <PRIVATE_KEY> \
-  -- get_subscriber_subs \
-  --subscriber <SUBSCRIBER_PUBLIC_KEY>
-```
+# The service's executor
+stellar contract invoke --id $CONTRACT_ID --network $NETWORK --source subscriber \
+  -- get_executor --service_id 0
 
-get_merchant_subs — List All Subscribers for a Service
+# Pending upgrade, if any
+stellar contract invoke --id $CONTRACT_ID --network $NETWORK --source subscriber \
+  -- get_pending_upgrade
 
-```bash
-stellar contract invoke \
-  --id $CONTRACT_ID \
-  --network $NETWORK \
-  -s <PRIVATE_KEY> \
-  -- get_merchant_subs \
-  --merchant <MERCHANT_PUBLIC_KEY> \
-  --service_id 0
-```
-
-is_subscription_active — Check if a Subscription is Active
-
-```bash
-stellar contract invoke \
-  --id $CONTRACT_ID \
-  --network $NETWORK \
-  -- is_subscription_active \
-  --subscriber <SUBSCRIBER_PUBLIC_KEY> \
-  --service_id 0
-```
-
-Returns true if current_timestamp < service_end_ts.
-
-version — Get Contract Version
-
-```bash
-stellar contract invoke \
-  --id $CONTRACT_ID \
-  --network $NETWORK \
+# Contract version (1)
+stellar contract invoke --id $CONTRACT_ID --network $NETWORK --source subscriber \
   -- version
 ```
 
-Admin Functions
-
-upgrade — Upgrade Contract WASM
-
-Admin only.
+To compare the allowance the token holds with what the wallet's live subscriptions need (the sum of `(reserved / price) × price`), read it from the token:
 
 ```bash
-stellar contract invoke \
-  --id $CONTRACT_ID \
-  --network $NETWORK \
-  -s <ADMIN_PRIVATE_KEY> \
-  -- upgrade \
-  --new_wasm_hash <32_BYTE_HASH_HEX>
+stellar contract invoke --id $TOKEN_ID --network $NETWORK --source subscriber \
+  -- allowance --from $SUBSCRIBER --spender $CONTRACT_ID
 ```
 
-Typical Flow
+### 9.8 Common errors
 
-```
-1. Merchant calls register_service
-         ↓
-2. Subscriber calls subscribe
-   (token approval is set automatically)
-         ↓
-3. When the period ends, merchant calls process
-         ↓
-4. Contract charges subscribers via transfer_from
-         ↓
-5. If allowance is running low, subscriber calls extend_subscription
-         ↓
-6. Subscriber can call cancel or toggle_auto_renew at any time
-```
+| Error | Usual cause | Fix |
+|---|---|---|
+| `ServiceNotOpen` (7) | Sign-ups closed or service `Inactive` | Use an `Open` service |
+| `AlreadySubscribed` (3) | A live subscription exists for this service, including a cancelled one still inside its period | Use `get_active_sub` to find it; `extend` it instead |
+| `PeriodMismatch` (16) | A charge landed since you read `period_end_ts` | Read again and retry |
+| `SubscriptionEnded` (11) | `extend` on a subscription that has ended | Subscribe again (if the service is `Open`) |
+| `TooManyIds` (22) | `get_subscriptions` with more than 50 ids | Split the read |
+| `BeyondApprovalHorizon` (23) | The budget's last charge window would close more than about 173 days ahead | Budget fewer periods now and `extend` later. For services with very long periods, subscribe with `--periods 0`. |
+| `NotProcessExecutor` (10) | `process` from a key that is neither merchant nor executor | Use the merchant key or set the executor |
+| `ProcessLimitTooHigh` (13) | More than 15 items | Split the batch |
+| Host auth error on a signed call | Between simulation and execution, the approve expiry moved to a later 720-ledger bucket, or the allowance changed (a charge, another signed call or a direct approve); see [10.10](10-security-considerations.md#1010-known-limitation-approve-expiry-mismatch) | Simulate again, sign again, resubmit |
 
-Events
+The full list is in [4. Error Codes](4-error-codes.md).
 
-| Topic    | Emitted When              | Payload                                                          |
-|----------|---------------------------|------------------------------------------------------------------|
-| approve  | Token approval issued     | (subscriber, service_id, amount, expiration_ledger, token)       |
-| srv_reg  | Service registered        | Service object                                                   |
-| sub      | Subscription created      | (subscriber, service_id, sub_id)                                 |
-| cancel   | Subscription cancelled    | (subscriber, sub_id, service_id, remaining_secs)                 |
-| renew    | auto_renew toggled        | (subscriber, sub_id, service_id, auto_renew)                     |
-| extend   | Approval refreshed        | (subscriber, sub_id, service_id)                                 |
-| charge   | Payment succeeded         | (subscriber, service_id, price)                                  |
-| chg_fail | Payment failed            | (subscriber, service_id, sub_id)                                 |
-| trl_end  | Trial period ended        | (subscriber, service_id, sub_id)                                 |
-| low_alw  | Allowance running low     | (subscriber, service_id, remaining_allowance, price)             |
-| low_bal  | Balance running low       | (subscriber, service_id, balance, price)                         |
-| upgrade  | Contract upgraded         | new_wasm_hash                                                    |
+Next: [`10-Security-Considerations`](10-security-considerations.md)

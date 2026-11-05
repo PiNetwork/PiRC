@@ -2,27 +2,65 @@
 
 This PiRC2 requests comments on the design and reference implementation (source code) of **subscription support**, Pi Network's first smart contract capability.
 
-Subscriptions are one of the most common business models among services in modern society, but they have been difficult to implement on blockchain systems. The subscription smart contract gives developers and businesses a way to build recurring service models into applications or their local commerce while processing the payments through the blockchain and preserving subscriber control over funds.
+Subscriptions are one of the most common business models today, but they have been hard to build on blockchains. The subscription contract lets developers and businesses add recurring payments to their apps, settle each payment on-chain, and leave subscribers in control of their funds.
 
-The reference implementation (source code) is available in [`PiNetwork/SmartContracts`](https://github.com/PiNetwork/SmartContracts/) under `contracts/subscription/`.
-The smart contract is being reviewed by external auditing services; in addition, we request the community to review the code and help identify any bugs or vulnerabilities.
+The reference implementation is in [`PiCoreTeam/pi-smartcontracts`](https://github.com/PiCoreTeam/pi-smartcontracts) under `contracts/subscription/` (PR #5). We ask the community to review the code and help find bugs or vulnerabilities.
 
-### 1.1 How It Works
+### 1.1 What the contract does
 
-A key part of the design is that subscribers can approve a defined budget for the contract to use, without needing to re-sign every billing event. That approval can also be limited to a defined billing horizon, such as monthly charges for up to one year. At the same time, the approved funds remain in the user's wallet until charges are actually processed. As long as the wallet has enough balance when a charge comes due, the subscription remains in effect, instead of requiring the full budget to be locked up in advance.
+The contract keeps the terms, state and money rules of every subscription. It:
 
-This allows the contract to support recurring payments without giving up the wallet-level control that blockchain systems are meant to preserve or sending the total budget out to the contract.
+- stores each service's terms (merchant, price, billing period, free trial) and whether it is open for sign-ups;
+- stores each subscription's current period end, remaining budget and number of paid periods;
+- decides who may call what, for every caller, including direct RPC calls;
+- charges a subscription at most once per billing period, and only inside that period's window;
+- at every subscriber signature, adds the new budget to (or removes a cancelled budget from) that subscriber's token allowance;
+- bounds every charge by the subscription's own budget and window, whatever the shared allowance says;
+- keeps an append-only index of every subscription each wallet created, so subscriptions created by calling the contract directly can be found.
 
-### 1.2 Use Cases
+It does not store names, descriptions, per-service or per-merchant lists, history or status labels. Those live off-chain. Status is computed from the stored fields and the clock when it is read. Payment history comes from the chain's transaction history.
 
-By bringing subscriptions to the ecosystem using Pi's smart contract capability, Pi is fostering use cases that map directly to real products and recurring utility-driven services built on blockchain such as subscriptions for AI products, productivity tools, digital content memberships, streaming, e-commerce, local commerce memberships, and more.
+### 1.2 How it works: non-custodial billing
 
-### 1.3 The Technical Innovation
+A subscriber approves a budget, for example "4 months at 5 Pi". The funds stay in the subscriber's wallet. Nothing is locked or sent to the contract. Each period the merchant asks the contract to collect one period's price, and the contract moves that amount from the subscriber's wallet to the merchant. No new signature is needed for each charge.
 
-Subscriptions are not a new idea, but they have usually involved tradeoffs on the blockchain. In most blockchain systems, each transfer of funds is a separate transaction that requires explicit authorization (typically a new user signature) at the time it is executed. That requirement is the opposite of a subscription, which is meant to run automatically on a schedule without requiring the subscriber to manually re-approve every billing event. As a result, proposed recurring-payment standards have often relied on tradeoffs such as off-chain coordination, risky pre-signed transactions, repeated authorization, pre-funding, or added account infrastructure.
+This uses Soroban's token allowance. The subscriber `approve`s the contract as a spender for an amount and until an expiry ledger. The contract can then call `transfer_from` up to that amount.
 
-Pi's model takes a different approach. It is designed to let subscriptions work without requiring a new signature for every billing event, while still keeping the approved funds in the subscriber's wallet until billing actually happens. This is a meaningful design choice in Web3, where recurring payments have often been harder to implement cleanly without adding friction, pre-funding, or extra infrastructure.
+The Pi token keeps **one allowance per (subscriber, contract)**, shared by all of that subscriber's subscriptions in this contract. The contract tracks a separate budget, `reserved`, for each subscription, and every charge is bounded by it. When the subscriber signs a call, the contract reads the token's current allowance and approves that value plus the new budget (`subscribe`, `extend`) or minus the cancelled budget (`cancel`). See [6.6 The shared allowance](6-subscription-lifecycle.md#66-the-shared-allowance).
 
-This innovation is enabled by Soroban's token allowance mechanism: a subscriber can `approve` a contract as a spender for a given amount (optionally with an `expiration_ledger`), and the contract can later draw down that allowance over time (e.g., via `transfer_from`) without transferring or locking the full budget upfront. When a charge is processed, the smart contract mediates the payment and transfers the subscription amount directly to the merchant.
+As long as the wallet holds enough Pi when a charge comes due, the subscription renews.
+
+### 1.3 Use cases
+
+Subscriptions for AI products, productivity tools, digital content and memberships, streaming, e-commerce, and local commerce memberships.
+
+### 1.4 What changed from the earlier draft
+
+The contract in this version is a new deployment. It does not upgrade or migrate the contract described by the earlier draft. Services and subscriptions on the earlier contract are not carried over.
+
+| Earlier draft | This version |
+|---|---|
+| `pay_upfront` / `auto_renew` flag and `toggle_pay_upfront` | No flag. A subscription renews while its `reserved` budget covers the price. `cancel` sets `reserved` to 0. |
+| `approve_periods` set by the merchant on the service | The subscriber picks `periods` at `subscribe` and can add more with `extend` |
+| `process(merchant, service_id)` walks a stored list | `process(caller, service_id, items)` takes explicit `sub_id`s, each with the `expected_period_end` it expects; at most 15 per call |
+| Only the merchant can bill | The merchant or a process-only executor key can bill |
+| Allowance only ever added to | Allowance adjusted on top of the token's current value: plus the budget added, minus the budget cancelled, expiry always at the cap. Each charge is bounded by its subscription's own budget. |
+| Subscription and service lists on-chain; `get_subscriber_subs`, `get_merchant_subs`, `get_merchant_services` | No per-service or per-merchant lists. Per wallet: an append-only index of every `sub_id` the wallet created (`get_wallet_sub_ids`) |
+| `name`, `is_active`, `created_at`, `next_charge_ts`, `service_end_ts`, price copied into each subscription | Service holds only its terms and `state`; subscription holds `period_end_ts`, `reserved`, `paid_periods` and its creation time `created_ts` |
+| Service `is_active` | `state`: `Open`, `SignupsClosed` or `Inactive` (final) |
+| Stored status | Status derived when read: `Trial`, `Paid`, `Due`, `Ended` |
+| Bare structs in storage | Versioned records (`V1`), append-only enums and error codes |
+| `upgrade` applied at once | Two-step admin handover and a 7-day upgrade timelock |
+| `version()` returned 3 | New contract; `version()` returns 1 |
+
+### 1.5 How apps use it
+
+Most apps do not call the contract directly. A Pi Browser app starts a subscription with the Pi SDK:
+
+```javascript
+await Pi.Subscriptions.subscribe(serviceId, { periods: 4 });
+```
+
+The Pi Wallet builds the `subscribe` call, shows the terms read from the transaction, and asks the user to sign. Subscriptions created by calling the contract directly are valid on-chain and follow every rule in this document, but Pi's apps and services do not know about them. The SDK documentation covers this.
 
 Next: [`2-Overview`](2-overview.md)

@@ -1,41 +1,225 @@
 ## 3. Data Types
 
-### 3.1 Service
+Amounts are `i128` in the token's smallest unit. Pi has 7 decimal places, so `10000000` = 1 Pi. Times are `u64` ledger timestamps: Unix seconds, UTC. There are no time zones on-chain; only user interfaces convert. Where the contract converts time to ledgers, it uses 5 seconds per ledger, rounding up.
+
+### 3.1 Versioned records
+
+Every stored record is a versioned enum from the first release:
+
+| Stored as | Current variant |
+|---|---|
+| `ServiceRecord` | `V1(ServiceV1)` |
+| `SubRecord` | `V1(SubV1)` |
+
+The wallet index (`WalletSubs` pages and `WalletSubCount`) holds plain values. It is append-only and its shape never changes.
+
+Rules for later versions:
+
+- A published variant's struct is frozen. A new field means a new variant (`V2`).
+- Reads accept every variant. A record is saved in the newest form the next time it is written.
+- Enum variants (`ServiceState`, `SubStatus`, `ChargeOutcome`) and error codes are append-only: never renamed, removed or reused.
+- Public read methods return view structs (3.3), never the stored record. New data gets a new method; existing signatures never change.
+- Event payloads are maps (structs), so new fields can be added as new keys.
+
+Off-chain decoders should read fields by name and tolerate unknown fields and variants.
+
+### 3.2 Stored types
+
+#### `ServiceState` (enum, append-only)
+
+| Variant | New sign-ups | Charges |
+|---|---|---|
+| `Open` | yes | yes |
+| `SignupsClosed` | no | yes: existing subscriptions keep renewing |
+| `Inactive` | no | no: existing subscriptions run to `period_end_ts`, then end |
+
+`subscribe` requires `Open` exactly. A state added later is not open for sign-ups unless new code says so.
+
+#### `ServiceV1`
+
+Stored at `Service(service_id)` as `ServiceRecord::V1`. Terms never change; only `state` does.
 
 | Field | Type | Description |
 |---|---|---|
-| `service_id` | `u64` | Auto-incremented unique identifier |
-| `merchant` | `Address` | Service owner's address |
-| `name` | `String` | Display name of the service |
-| `price` | `i128` | Amount charged per period |
-| `period_secs` | `u64` | Billing cycle duration in seconds |
-| `trial_period_secs` | `u64` | Free trial duration in seconds (0 = no trial) |
-| `approve_periods` | `u64` | Number of periods to pre-approve when `pay_upfront = true` |
-| `is_active` | `bool` | Whether the service accepts new subscriptions |
-| `created_at` | `u64` | Ledger timestamp at creation |
+| `service_id` | `u64` | From the `NextServiceId` counter |
+| `merchant` | `Address` | Service owner; receives every charge |
+| `price` | `i128` | Amount charged per period (> 0) |
+| `period_secs` | `u64` | Billing period in seconds (> 0). No other limit. |
+| `trial_period_secs` | `u64` | Free trial in seconds; 0 = no trial. No limit. |
+| `state` | `ServiceState` | The only mutable field |
 
-### 3.2 Subscription
+#### `SubV1`
 
-| Field | Type | Description |
-|---|---|---|
-| `sub_id` | `u64` | Auto-incremented unique identifier |
-| `subscriber` | `Address` | Subscriber's address |
-| `service_id` | `u64` | Associated service ID |
-| `price` | `i128` | Price locked at subscription time |
-| `period_secs` | `u64` | Billing cycle duration (copied from service) |
-| `trial_period_secs` | `u64` | Trial duration (copied from service) |
-| `trial_end_ts` | `u64` | Timestamp when trial ends (0 if no trial) |
-| `pay_upfront` | `bool` | If `true`, `process()` will charge this subscription on each cycle |
-| `service_end_ts` | `u64` | Timestamp when current active period expires |
-| `next_charge_ts` | `u64` | Next time `process()` will attempt to charge |
-| `created_at` | `u64` | Ledger timestamp at creation |
-
-### 3.3 ProcessResult
+Stored at `Sub(sub_id)` as `SubRecord::V1`. It is the only source of truth for a subscription. Price and period are read from the service, so the terms cannot change after the subscriber signs.
 
 | Field | Type | Description |
 |---|---|---|
-| `charged` | `u32` | Subscriptions successfully charged |
-| `failed` | `u32` | Subscriptions where payment failed (auto-cancelled) |
-| `skipped` | `u32` | Subscriptions not yet due or not `pay_upfront` |
+| `sub_id` | `u64` | From the `NextSubId` counter |
+| `subscriber` | `Address` | The paying wallet |
+| `service_id` | `u64` | The service subscribed to |
+| `period_end_ts` | `u64` | End of the paid or trial period, and the start of the next charge window |
+| `reserved` | `i128` | Approved budget left; always a multiple of `price` |
+| `paid_periods` | `u32` | Number of periods paid; 0 during a free trial |
+| `created_ts` | `u64` | Ledger timestamp of the `subscribe` that created it. Set once, never changed. The last field of `SubV1`. |
+
+A stored `Sub` value is about 288 bytes (`created_ts` adds 32 bytes: an XDR map key plus a `u64`).
+
+#### Wallet index
+
+| Key | Value | Description |
+|---|---|---|
+| `WalletSubs(subscriber, page: u32)` | `Vec<u64>` | Up to 50 sub ids per page, in creation order. Every subscription the wallet ever created, including ones created by calling the contract directly. Never removed. |
+| `WalletSubCount(subscriber)` | `u64` | Number of ids in `WalletSubs`. The last page is `count / 50`, rounded down. |
+
+#### `PendingUpgrade`
+
+| Field | Type | Description |
+|---|---|---|
+| `wasm_hash` | `BytesN<32>` | Hash of the proposed contract WASM |
+| `apply_after_ts` | `u64` | Earliest time `apply_upgrade` may run: proposal time + 7 days |
+
+#### `DataKey`
+
+| Key | Storage | Value | Purpose |
+|---|---|---|---|
+| `Admin` | instance | `Address` | Current admin |
+| `PendingAdmin` | instance | `Address` | Proposed admin, until accepted |
+| `PendingUpgrade` | instance | `PendingUpgrade` | Proposed upgrade, until applied or cancelled |
+| `Token` | instance | `Address` | Pi native token contract; fixed at deploy |
+| `NextServiceId` | instance | `u64` | Id counter; starts at 0 |
+| `NextSubId` | instance | `u64` | Id counter; starts at 0 |
+| `Service(u64)` | persistent | `ServiceRecord` | Service by `service_id` |
+| `Sub(u64)` | persistent | `SubRecord` | Subscription by `sub_id` |
+| `ActiveSub(Address, u64)` | persistent | `u64` (`sub_id`) | Most recent subscription for (subscriber, service); the duplicate guard |
+| `TrialUsed(Address, u64)` | persistent | `bool` (`true`) | Set once a trial is granted for (subscriber, service) |
+| `Executor(u64)` | persistent | `Address` | Optional process-only key for a service; removed when unset |
+| `WalletSubs(Address, u32)` | persistent | `Vec<u64>` | Wallet index page: (subscriber, page) |
+| `WalletSubCount(Address)` | persistent | `u64` | Wallet index size |
+
+Not stored: status, end reason, names, per-service or per-merchant lists, and any per-wallet allowance total. The token's allowance is the only allowance record.
+
+#### Amounts
+
+| Term | Definition |
+|---|---|
+| `whole(sub)` | `(reserved / price) × price`, rounded down to whole prices: the budget the subscription can still be charged |
+| `deadline` | `period_end_ts + period_secs`: when the current charge window closes |
+
+### 3.3 Views
+
+Read methods return these. They are never stored.
+
+#### `SubStatus` (enum, append-only)
+
+| Variant | Condition |
+|---|---|
+| `Trial` | `now < period_end_ts` and `paid_periods == 0` |
+| `Paid` | `now < period_end_ts` and `paid_periods > 0` |
+| `Due` | `now >= period_end_ts` and the subscription has not ended: `now < period_end_ts + period_secs` and `reserved >= price` and service `state != Inactive` |
+| `Ended` | otherwise |
+
+#### `SubscriptionView`
+
+| Field | Type | Description |
+|---|---|---|
+| `sub_id` | `u64` | As stored |
+| `subscriber` | `Address` | As stored |
+| `service_id` | `u64` | As stored |
+| `period_end_ts` | `u64` | As stored |
+| `reserved` | `i128` | As stored |
+| `paid_periods` | `u32` | As stored |
+| `created_ts` | `u64` | As stored: when the subscription was created |
+| `status` | `SubStatus` | Derived at read time from the stored fields, the service and the clock |
+
+`status` does not look at the token. A `Due` subscription whose allowance has expired or been revoked still reads `Due`; its charge returns `ApprovalLost` until the subscriber signs any call. To know whether the next charge can land, read the token's allowance entry (`["Allowance", {from, spender}]` → `{amount, live_until_ledger}`) for its amount and expiry.
+
+#### `ServiceView`
+
+| Field | Type |
+|---|---|
+| `service_id` | `u64` |
+| `merchant` | `Address` |
+| `price` | `i128` |
+| `period_secs` | `u64` |
+| `trial_period_secs` | `u64` |
+| `state` | `ServiceState` |
+
+### 3.4 Billing types
+
+#### `ChargeItem`
+
+| Field | Type | Description |
+|---|---|---|
+| `sub_id` | `u64` | Subscription to charge |
+| `expected_period_end` | `u64` | The `period_end_ts` the caller last saw. If it no longer matches, the item is skipped. |
+
+#### `ChargeOutcome` (enum, append-only)
+
+Only `Charged` changes anything. Every other outcome leaves the subscription as it was.
+
+| Variant | Meaning |
+|---|---|
+| `Charged` | One period paid |
+| `NotDue` | `now < period_end_ts` |
+| `AlreadyHandled` | `expected_period_end` or `service_id` does not match: already charged, or the wrong service |
+| `Stale` | The window closed without a charge. The subscription has ended. |
+| `Exhausted` | `reserved < price` |
+| `Ended` | The service is `Inactive`, or the `sub_id` does not exist |
+| `ChargeFailed` | The allowance is not 0, but the token refused `transfer_from` (low balance, or an allowance lowered below the price). The subscription stays `Due` and can be retried until its window closes. |
+| `ApprovalLost` | The token allowance is 0 (revoked directly, or expired after the last signed call's cap). The subscription stays `Due` and can be retried until its window closes. A later retry can succeed after the subscriber signs a call that adds budget (`subscribe` or `extend`), or after a direct `approve` in the token. `refresh_approval` keeps the amount, so it does not help when the amount is 0. |
+
+#### `ItemResult`
+
+| Field | Type |
+|---|---|
+| `sub_id` | `u64` |
+| `outcome` | `ChargeOutcome` |
+
+`process` returns one `ItemResult` per input item, in order.
+
+### 3.5 Events
+
+Every event payload is a struct (a map), except `upgrade` and `admin`, which are tuples.
+
+| Kind | Topics | Emitted by | Payload |
+|---|---|---|---|
+| `svc_reg` | `[svc_reg, merchant]` | `register_service` | `ServiceRegisteredEvent` |
+| `svc_state` | `[svc_state, merchant]` | `set_service_state`, only when the state changes | `ServiceStateEvent` |
+| `exec_set` | `[exec_set, merchant]` | `set_executor` | `ExecutorEvent` |
+| `sub_new` | `[sub_new, subscriber]` | `subscribe` | `SubNewEvent` |
+| `sub_ext` | `[sub_ext, subscriber]` | `extend` | `SubEvent` |
+| `sub_cncl` | `[sub_cncl, subscriber]` | `cancel`, only when it releases budget | `SubEvent` |
+| `charged` | `[charged, subscriber]` | `process`, on each successful charge | `ChargedEvent` |
+| `approval` | `[approval, subscriber]` | Every subscriber-signed call (`subscribe`, `extend`, `cancel`, `refresh_approval`) | `ApprovalEvent` |
+| `low_bal` | `[low_bal, subscriber]` | `process`, after a charge, when the balance is below `price` | `LowFundsEvent` |
+| `low_alw` | `[low_alw, subscriber]` | `process`, after a charge, when the allowance is below `price` | `LowFundsEvent` |
+| `upgrade` | `[upgrade]` | `propose_upgrade`, `apply_upgrade`, `cancel_upgrade` | `(phase: Symbol, wasm_hash: BytesN<32>)`, phase `propose`, `apply` or `cancel` |
+| `admin` | `[admin]` | `propose_admin`, `accept_admin` | `(phase: Symbol, new_admin: Address)`, phase `propose` or `accept` |
+
+Payload structs:
+
+| Struct | Fields |
+|---|---|
+| `ServiceRegisteredEvent` | `service_id: u64`, `price: i128`, `period_secs: u64`, `trial_period_secs: u64`, `state: ServiceState` |
+| `ServiceStateEvent` | `service_id: u64`, `state: ServiceState` |
+| `ExecutorEvent` | `service_id: u64`, `executor: Vec<Address>`: one element when set, empty when removed |
+| `SubEvent` | `sub_id: u64`, `service_id: u64`, `amount: i128`, `period_end_ts: u64`, `reserved: i128`, `paid_periods: u32` |
+| `SubNewEvent` | `sub_id: u64`, `service_id: u64`, `amount: i128`, `period_end_ts: u64`, `reserved: i128`, `paid_periods: u32`, `created_ts: u64` |
+| `ChargedEvent` | `sub_id: u64`, `service_id: u64`, `amount: i128`, `period_end_ts: u64`, `reserved: i128`, `paid_periods: u32` |
+| `ApprovalEvent` | `amount: i128`, `expiration_ledger: u32` |
+| `LowFundsEvent` | `sub_id: u64`, `available: i128` |
+
+Field notes:
+
+- `SubNewEvent.amount` is the first payment (0 for a trial). `SubEvent.amount` is the budget added for `sub_ext` and the budget released for `sub_cncl`.
+- `ChargedEvent.amount` is the price charged. The payee is the service's merchant, fixed by `service_id`, and also named in the token's own `transfer` event.
+- `period_end_ts`, `reserved` and `paid_periods` in `SubNewEvent`, `SubEvent` and `ChargedEvent` are the values after the change.
+- `created_ts` appears in `sub_new` (`SubNewEvent`) only. `sub_ext`, `sub_cncl` and `charged` do not carry it; it never changes, so off-chain readers take it from `sub_new` or from `get_subscription`.
+- `ApprovalEvent` mirrors the `approve` just made: the new total amount and the expiration ledger (both 0 on revoke).
+- `LowFundsEvent.available` is the token balance (`low_bal`) or the allowance (`low_alw`) after the charge. The allowance is read once per subscriber per `process` call and lowered by each charge in that call. The `charged` event just before it carries the full resulting state.
+
+`low_bal`, `low_alw` and `charged` are kept small so that a worst-case batch of 15 charges stays under Pi Testnet's 16,384-byte event limit.
+
+There is no "subscription ended" event. A subscription ends by the clock (see [6.8](6-subscription-lifecycle.md#68-status)), not by a call. Off-chain systems read the end from the subscription's state.
 
 Next: [`4-Error-Codes`](4-error-codes.md)
