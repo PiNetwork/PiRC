@@ -26,6 +26,7 @@ Errors are a `#[contracterror]` enum. Codes are append-only: a code is never reu
 | 20 | `UpgradeTimelockNotElapsed` | `apply_upgrade` before `apply_after_ts` |
 | 21 | `UpgradeAlreadyPending` | `propose_upgrade` while another upgrade is pending |
 | 22 | `TooManyIds` | `get_subscriptions` with more than 50 ids |
+| 23 | `BeyondApprovalHorizon` | `subscribe` or `extend` with a budget whose last charge window would close after the allowance's expiry minus 7 days (about 173 days ahead); see [6.6](6-subscription-lifecycle.md#66-the-shared-allowance) |
 
 A failed authorization (`require_auth`) aborts the call with the host's own auth error, not one of these codes.
 

@@ -162,7 +162,7 @@ Only `Charged` changes anything. Every other outcome leaves the subscription as 
 | `Exhausted` | `reserved < price` |
 | `Ended` | The service is `Inactive`, or the `sub_id` does not exist |
 | `ChargeFailed` | The allowance is not 0, but the token refused `transfer_from` (low balance, or an allowance lowered below the price). The subscription stays `Due` and can be retried until its window closes. |
-| `ApprovalLost` | The token allowance is 0 (expired or revoked). The subscription stays `Due` and can be retried until its window closes. A later retry can succeed after the subscriber signs a call that adds budget (`subscribe` or `extend`), or after a direct `approve` in the token. `refresh_approval` keeps the amount, so it does not help when the amount is 0. |
+| `ApprovalLost` | The token allowance is 0 (revoked directly, or expired after the last signed call's cap). The subscription stays `Due` and can be retried until its window closes. A later retry can succeed after the subscriber signs a call that adds budget (`subscribe` or `extend`), or after a direct `approve` in the token. `refresh_approval` keeps the amount, so it does not help when the amount is 0. |
 
 #### `ItemResult`
 

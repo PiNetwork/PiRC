@@ -71,7 +71,7 @@ How the contract manages it:
 
 | Entry | Storage | When it expires | Recoverable? |
 |---|---|---|---|
-| Token allowance | temporary | At its expiration ledger. Every signed call sets it to the cap, so it lapses about 180 days after the wallet's last signed call on this contract. | **No.** It is deleted and reads as 0. See 10.5. |
+| Token allowance | temporary | At its expiration ledger. Every signed call sets it to the cap, so it lapses about 180 days after the wallet's last signed call on this contract. The approval horizon ([6.6](6-subscription-lifecycle.md#66-the-shared-allowance)) ensures that this happens only after every accepted budget's last charge window has closed. | **No.** It is deleted and reads as 0. See 10.5. |
 | `Sub`, `Service` of a live subscription | persistent | Kept live by charges and writes | Yes |
 | `WalletSubs` pages, `WalletSubCount` | persistent | Archive after the minimum TTL | Yes: still readable; restored by the next `subscribe` |
 | An ended subscription's entries, `ActiveSub`, `TrialUsed` | persistent | Archive after their TTL | Yes |
@@ -90,13 +90,13 @@ The allowance is adjusted on top of the token's current value ([6.6](6-subscript
 | Direct revoke in the token (set to 0) | Charges return `ApprovalLost`, retried until their windows close. The next `subscribe` or `extend` adds only its own `price × periods` on top of 0. `refresh_approval` and `cancel` leave it at 0. | No |
 | Direct lower in the token | Charges the allowance can no longer cover fail with `ChargeFailed` and are retried. Later signed calls add to or subtract from the lowered value; nothing restores the difference. | No |
 | Direct raise in the token | Charges proceed as before. The extra amount is carried forward by later signed calls. | No: each charge is still exactly `price`, only within that subscription's `reserved` and window |
-| Lapse: no signed call for about 180 days | The allowance reads 0. As for a revoke: charges return `ApprovalLost` and the next `subscribe` or `extend` adds only its own budget. | No |
+| Lapse: no signed call for about 180 days | Prevented while any accepted budget remains, as long as ledgers average at least about 4.81 s (10.15): `subscribe` and `extend` refuse budgets whose last window closes after the expiry they set (`BeyondApprovalHorizon`). A lapse can only drop lingering budget of ended subscriptions. | No |
 | Allowance below the sum of live budgets (after any of the above) | Charges of different subscriptions compete for the shared number. A subscription's charge can use headroom the subscriber added for another subscription; the other one's charge then fails and is retried (10.11). | No |
 | Ended subscription with budget left (missed window, service `Inactive`) | Its budget stays in the allowance (10.12). It cannot be charged. | No |
 
 In every case, the per-subscription guards hold. A subscription can never pay more than `price` per period, more than its own `reserved`, or anyone other than its service's merchant. The wallet's total outflow through this contract is at most the sum of the budgets the subscriber authorized.
 
-Recovery when a subscription's charges fail because the allowance is too low: the subscriber calls `extend` on it. That adds `price × periods` to both its budget and the allowance (see the limitation in 10.13). A wallet can compare the token's allowance with the sum of `whole(sub)` over its live subscriptions (read with `get_subscriptions`) and show "Approved X · Needed Y".
+Recovery when a subscription's charges fail because the allowance is too low (after a direct revoke or lower, or a `cancel` under contention): the subscriber calls `extend` on it, or approves directly in the token. `extend` adds `price × periods` to both its budget and the allowance (see 10.13). Spotting this: a possible future wallet feature (Approved vs Needed, computed off-chain from `WalletSubs` + live reads) can show and correct this; not part of the current release.
 
 ### 10.6 Executor key leak
 
@@ -128,6 +128,7 @@ The admin role itself moves only through a two-step handover.
 
 ### 10.9 Limits
 
+- Prepaid budgets are limited by the approval horizon (which assumes ledgers average at least about 4.81 s, 10.15): the last budgeted charge window must close within about 173 days (`BeyondApprovalHorizon`). At `subscribe` the first period counts, so without a trial a service accepts prepaid budget only if its period is at most about 86.5 days. Services with a period between about 86.5 and 173 days renew one period at a time through an `extend` made late in the paid period. Services with a period of about 173 days or more never renew through the allowance.
 - No limit on live subscriptions per wallet. A subscriber-signed call reads the token's allowance and touches only the subscription it changes and, for `subscribe`, the wallet index. Its cost does not grow with the number of live subscriptions.
 - At most 15 items per `process` call (`ProcessLimitTooHigh`), sized for Pi Testnet's per-transaction limits. Billing clients should simulate each batch and split it if it exceeds a limit.
 - `get_subscriptions` reads at most 50 ids per call (`TooManyIds`).
@@ -140,13 +141,13 @@ Nothing changes on-chain when this happens. Clients should treat this auth error
 
 ### 10.11 Accepted limitation: the shared number
 
-The token allowance is one number per (wallet, contract). It can fall below the sum of the live budgets after an expiry, a direct revoke or lower, or a lapse past about 180 days. Then:
+The token allowance is one number per (wallet, contract). It can fall below the sum of the live budgets after a direct revoke or lower in the token, or after a `cancel` under contention (10.14). It cannot lapse while an accepted budget remains (approval horizon), as long as ledgers average at least about 4.81 s (10.15). Then:
 
 - charges of different subscriptions compete for it, first come first served;
 - a subscription's legitimate charge can use headroom the subscriber added when signing for **another** subscription;
 - that other subscription's charge then fails (`ChargeFailed` or `ApprovalLost`). It is retried, and no money is lost.
 
-Example: the allowance lapses while A and B are live. The subscriber then subscribes to C, so the allowance becomes `0 + C's budget`. A and B are due first and charge from that headroom, each within its own budget. When C is due, the allowance is too low and C's charge fails. Recovery: the subscriber extends C. See also the diagram in [2.5](2-overview.md#25-the-shared-allowance-over-time).
+Example: the subscriber revokes the allowance directly while A and B are live. The subscriber then subscribes to C, so the allowance becomes `0 + C's budget`. A and B are due first and charge from that headroom, each within its own budget. When C is due, the allowance is too low and C's charge fails. Recovery: the subscriber extends C. See also the diagram in [2.5](2-overview.md#25-the-shared-allowance-over-time).
 
 No subscription ever pays more than its own budget.
 
@@ -159,30 +160,50 @@ A subscription can end without being charged: its window passes, or its service 
 - `cancel` before a subscription ends removes its budget from the allowance; `cancel` after it ends changes nothing.
 - The subscriber can lower the allowance directly in the token at any time.
 
-With the cap expiry, the allowance, including any lingering budget, lapses about 180 days after the wallet's last signed call.
+With the cap expiry, the allowance, including any lingering budget, lapses about 180 days after the wallet's last signed call. By then every accepted budget's last window has closed (approval horizon).
 
-### 10.13 Accepted limitation: no way to re-cover an existing budget
+### 10.13 Accepted limitation: uncovered budgets after a direct revoke or lower
 
-After a lapse or a direct revoke, the allowance is 0 while subscriptions may still have budget left. The contract offers no call that adds those existing budgets back:
+**Lapse is prevented.** `subscribe` and `extend` refuse any budget whose last charge window closes after the expiry they set, minus a 7-day margin (`BeyondApprovalHorizon`, [6.6](6-subscription-lifecycle.md#66-the-shared-allowance)). Later signed calls only move the expiry ledger later (`approval_cap()` never decreases). So the allowance cannot expire while an accepted budget remains, and expiry alone never leaves a live subscription uncovered, as long as ledgers average at least about 4.81 s (10.15).
 
-- `refresh_approval` approves `current`, which is 0;
-- `extend` adds only `price × periods`, and raises the subscription's `reserved` by the same amount.
+**What can still leave live budgets uncovered:**
 
-Example: a subscription with 6 prices left loses its allowance. The subscriber can make it chargeable again only through `extend`, and each extension also increases what the subscriber committed. A direct `approve` in the token is the other way back.
+- a direct revoke or lower of the allowance in the token;
+- a `cancel` under contention, which subtracts the cancelled subscription's whole budget even if other subscriptions were using that headroom (10.14).
 
-This is a liveness and user-experience gap, not a money risk: no subscription can take more than its `reserved`. A fix is under discussion and not specified in this revision.
+There is no call that adds the existing budgets of live subscriptions back. `refresh_approval` approves `current`. `extend` adds only `price × periods`, and raises the subscription's `reserved` by the same amount. Example: a subscription with 4 prices left loses its allowance to a direct revoke. The subscriber can make it chargeable again through `extend`, which also increases what they committed, or with a direct `approve` in the token.
+
+This is a liveness and user-experience gap, not a money risk: no subscription can take more than its `reserved`.
 
 ### 10.14 Known behaviour (review findings)
 
-| Behaviour | Detail | What clients should do |
+| Behaviour | Detail | Handling |
 |---|---|---|
-| Lingering allowance only grows while the wallet is active | Budget of subscriptions that end without being charged stays in the allowance (10.12). Every `subscribe` and `extend` adds on top of it, and only `cancel` before the end or a direct `approve` lowers it. As long as the wallet keeps signing, the cap expiry keeps renewing it. If a per-subscription guard or a future upgrade were faulty, the exposure would be the whole lingering allowance, not just the live budgets. | The wallet should show "Approved X · Needed Y" (Needed = sum of `whole(sub)` over live subscriptions) and offer a direct `approve` down to Needed when X is higher. |
+| Lingering allowance only grows while the wallet is active | Budget of subscriptions that end without being charged stays in the allowance (10.12). Every `subscribe` and `extend` adds on top of it, and only `cancel` before the end or a direct `approve` lowers it. As long as the wallet keeps signing, the cap expiry keeps renewing it. It lapses only about 180 days after the last signed call. If a per-subscription guard or a future upgrade were faulty, the exposure would be the whole lingering allowance, not just the live budgets. | A possible future wallet feature (Approved vs Needed, computed off-chain from `WalletSubs` + live reads) can show and correct this; not part of the current release. Until then, the subscriber can lower the allowance with a direct `approve` in the token. |
 | A concurrent charge between simulation and execution | A charge that lands after the subscriber's call was simulated lowers `current`. The executed `approve` amount then differs from the signed one, and the signed call fails with an auth error. Nothing changes on-chain. | Re-simulate and re-sign, as in 10.10. |
-| `cancel` under contention | When the allowance is below the sum of the live budgets (10.11), `cancel` subtracts the cancelled subscription's whole remaining budget. That can remove headroom that other live subscriptions were using, so their next charges fail (`ChargeFailed` or `ApprovalLost`, retried). No subscription pays more than its own budget. | After a `cancel`, compare Approved with Needed and offer `extend` (or a direct `approve`) for subscriptions that are no longer covered. |
+| `cancel` under contention | When the allowance is below the sum of the live budgets (10.11), `cancel` subtracts the cancelled subscription's whole remaining budget. That can remove headroom that other live subscriptions were using, so their next charges fail (`ChargeFailed` or `ApprovalLost`, retried). No subscription pays more than its own budget. | A possible future wallet feature (Approved vs Needed, computed off-chain from `WalletSubs` + live reads) can show and correct this; not part of the current release. Until then, the subscriber can `extend` the affected subscriptions or approve directly in the token. |
 
-### 10.15 Possible later upgrades
+### 10.15 Known limitation: ledger speed and the approval horizon
 
-- A way to re-cover existing budgets after a lapse or revoke (10.13). Under discussion.
+The approval horizon converts the allowance's expiry ledger to a time at the nominal 5 seconds per ledger, then subtracts a 7-day margin (`HORIZON_MARGIN`). What only moves later is the expiry ledger: `approval_cap()` never decreases. The time estimate `horizon_ts` can move slightly earlier within a 720-ledger bucket when ledgers run faster than 5 s. Safety rests on the expiry ledger.
+
+If ledgers run faster than 5 s on average, the expiry ledger arrives earlier in real time than estimated.
+
+| Item | Value |
+|---|---|
+| Guarantee holds while ledgers average | at least about 4.81 s |
+| Why | The 7-day margin tolerates ledgers about 3.9% faster than nominal: `(5 − L) × ~3.11M ledgers <= 604,800 s` |
+| Measured on Pi Testnet (2026-11-05, Horizon `closed_at`) | 5.000 s over 1 and 7 days; 5.00005 s over 30 days; 5.001 s over 60 days |
+| Before launch | Confirm Pi Mainnet's average ledger time |
+| Alternative | A 14-day margin would tolerate averages of at least 4.61 s, at the cost of about 7 days less prepay |
+
+If ledgers ran faster than the tolerance, an allowance could expire before the last budgeted charge of a subscription. That charge would return `ApprovalLost` and be retried, and no money would be lost. The subscriber would need to `extend` or approve directly (10.13).
+
+### 10.16 Possible later upgrades
+
+- **`reapprove(sub_ids)`** (option A). A subscriber-signed call that adds Σ `whole(sub)` of the listed live subscriptions on top of `current`, to re-cover budgets after a direct revoke or lower (10.13).
+  - Risk: the contract cannot tell which part of `current` already covers which subscription. If the listed budgets are still partly covered, they are counted twice and the allowance grows beyond what the live subscriptions need. That over-approval is unspendable beyond each subscription's own budget, but it adds to the exposure described in 10.14.
+  - A wallet would have to call it only for subscriptions it knows are uncovered (Approved below Needed, the possible future wallet feature in 10.14).
 - Cleaning up lingering budget of ended subscriptions. An in-ledger allowance sync was designed (the day-bucket design, archived on branch `ref-subscription-day-buckets-PI-14957`) and is not part of this revision.
 
 Back to: [`ReadMe`](ReadMe.md)

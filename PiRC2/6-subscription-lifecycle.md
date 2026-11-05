@@ -21,10 +21,12 @@ Steps, in order:
 2. If `ActiveSub(subscriber, service_id)` points to a subscription that has not ended: `AlreadySubscribed`. A cancelled subscription that is still inside its paid period counts as not ended.
 3. `reserved = price × periods` (`AmountOverflow`).
 4. Allowance step: read `current` from the token once and compute `amount = current + reserved` (`AmountOverflow`). Nothing later in the call changes the allowance before the approve; the first payment is a plain `transfer`.
-5. Trial or first payment (below). `period_end_ts` is computed with `TimestampOverflow` checks.
-6. Save the subscription. Set `ActiveSub(subscriber, service_id) = sub_id`.
-7. Append `sub_id` to the wallet index (`WalletSubs`, `WalletSubCount`). Emit `sub_new`.
-8. `approve(subscriber, contract, amount, cap expiry)`. Emit `approval`.
+5. Decide trial or first payment (below) and compute `period_end_ts` (`TimestampOverflow`).
+6. Approval horizon ([6.6](#66-the-shared-allowance)): `check_horizon(period_end_ts, k = periods)`, else `BeyondApprovalHorizon`. This runs before `TrialUsed` is set and before the first payment.
+7. Set `TrialUsed`, or make the first payment.
+8. Save the subscription. Set `ActiveSub(subscriber, service_id) = sub_id`.
+9. Append `sub_id` to the wallet index (`WalletSubs`, `WalletSubCount`). Emit `sub_new`.
+10. `approve(subscriber, contract, amount, cap expiry)`. Emit `approval`.
 
 There is no limit on the number of live subscriptions per wallet.
 
@@ -46,12 +48,15 @@ Examples for a service at 5 Pi per 30 days:
 
 | `periods` | `claim_trial` (service has a 7-day trial, unused) | Paid now | `reserved` | Charges that can follow |
 |---|---|---|---|---|
-| 12 | `true` | 0 | 60 Pi | 12, the first at the end of the trial |
-| 12 | `false` | 5 Pi | 60 Pi | 12, the first after 30 days |
+| 5 | `true` | 0 | 25 Pi | 5, the first at the end of the trial. Last window closes at day 7 + 5 × 30 = 157. |
+| 4 | `false` | 5 Pi | 20 Pi | 4, the first after 30 days. Last window closes at day 30 + 4 × 30 = 150. |
+| 5 | `false` | — | — | refused: `BeyondApprovalHorizon` (day 30 + 5 × 30 = 180 is beyond the horizon of about 173 days) |
 | 0 | `false` | 5 Pi | 0 | none: one paid period, then it ends |
 | 0 | `true` | 0 | 0 | none: trial only, then it ends |
 
-**Errors:** `ServiceNotFound`, `ServiceNotOpen`, `AlreadySubscribed`, `AmountOverflow`, `TimestampOverflow`. The call also fails if the token refuses the first payment (for example, low balance).
+For this service the most a subscriber can budget is 4 periods without a trial, or 5 periods with the 7-day trial.
+
+**Errors:** `ServiceNotFound`, `ServiceNotOpen`, `AlreadySubscribed`, `AmountOverflow`, `TimestampOverflow`, `BeyondApprovalHorizon`. The call also fails if the token refuses the first payment (for example, low balance).
 
 **Events:** `sub_new` (`amount` = first payment, 0 for a trial), `approval`
 
@@ -75,14 +80,17 @@ Steps, in order:
 3. The subscription must not have ended: the window is still open, the service is not `Inactive`, and it is not past `period_end_ts` with `reserved < price`. Otherwise `SubscriptionEnded`.
 4. `reserved += price × periods` (`AmountOverflow`).
 5. Allowance step: read `current` once and compute `amount = current + price × periods` (`AmountOverflow`).
-6. Save the subscription. Emit `sub_ext`.
-7. `approve(subscriber, contract, amount, cap expiry)`. Emit `approval`.
+6. Approval horizon, only if `periods > 0`: `check_horizon(period_end_ts, k = reserved / price)`, where `k` is the whole periods of budget after the call. Otherwise `BeyondApprovalHorizon`.
+7. Save the subscription. Emit `sub_ext`.
+8. `approve(subscriber, contract, amount, cap expiry)`. Emit `approval`.
+
+Because the check counts the whole budget after the call, a subscriber can top up only as far as the horizon allows. `extend` with `periods = 0` is never checked: it commits nothing new, and the allowance's expiry ledger, which only moves later, still covers every accepted budget.
 
 An ended subscription never comes back. To continue after it ends, the subscriber calls `subscribe` again. A cancelled subscription that is still inside its paid period has not ended, so `extend` before `period_end_ts` gives it a new budget.
 
-`extend` is also how a subscriber restores billing when the allowance has dropped below what a subscription needs (for example after the allowance lapsed). It adds `price × periods` to both the budget and the allowance, so it also raises what the subscriber commits. There is no call that re-covers a subscription's existing budget alone ([10.13](10-security-considerations.md#1013-accepted-limitation-no-way-to-re-cover-an-existing-budget)).
+`extend` is also how a subscriber restores billing when the allowance has dropped below what a subscription needs (for example after a direct revoke). It adds `price × periods` to both the budget and the allowance, so it also raises what the subscriber commits. There is no call that re-covers a subscription's existing budget alone ([10.13](10-security-considerations.md#1013-accepted-limitation-uncovered-budgets-after-a-direct-revoke-or-lower)).
 
-**Errors:** `SubscriptionNotFound`, `Unauthorized`, `ServiceNotFound`, `PeriodMismatch`, `SubscriptionEnded`, `AmountOverflow`
+**Errors:** `SubscriptionNotFound`, `Unauthorized`, `ServiceNotFound`, `PeriodMismatch`, `SubscriptionEnded`, `AmountOverflow`, `BeyondApprovalHorizon`
 
 **Events:** `sub_ext` (`amount` = budget added), `approval`
 
@@ -116,9 +124,9 @@ Steps, in order:
 
 Reads `current` and approves it again with the cap expiry: `approve(subscriber, contract, current, cap expiry)` (a revoke if `current` is 0). It changes no subscription and no amount.
 
-Use it to renew an allowance that will expire. Pi caps an allowance's life at about 180 days ([10.4](10-security-considerations.md#104-storage-expiry)).
+Use it to push the allowance's expiry later, for example before a long gap without other signed calls. Pi caps an allowance's life at about 180 days ([10.4](10-security-considerations.md#104-storage-expiry)). The approval horizon already keeps the allowance alive for every accepted budget.
 
-It does not help once the allowance is already 0 (expired or revoked), because it keeps the amount. In that case the subscriber calls `extend` on the subscriptions to keep.
+It does not help once the allowance is 0 (revoked directly), because it keeps the amount. In that case the subscriber calls `extend` on the subscriptions to keep.
 
 **Events:** `approval`
 
@@ -161,7 +169,7 @@ The allowance in step 7 is read from the token once per subscriber per call, the
 
 **On every other outcome:** nothing is written.
 
-- `ApprovalLost` means the allowance is 0: expired or revoked.
+- `ApprovalLost` means the allowance is 0: revoked directly, or expired after every accepted budget ended.
 - `ChargeFailed` means the allowance is non-zero but the transfer failed: the balance is too low, or the allowance is below the price.
 - In both cases the subscription stays `Due`, and later runs can retry until its window closes. After that it returns `Stale`. The subscriber can fix the cause by topping up the wallet or calling `extend`.
 
@@ -214,6 +222,43 @@ Rules for every approve:
 
 As a result, an allowance lapses only about 180 days after the wallet's last signed call on this contract.
 
+**Approval horizon.** `subscribe` and `extend` (with `periods > 0`) refuse a budget whose last possible charge falls after the expiry they set:
+
+```
+horizon_ts = now + (approval_cap() − current_ledger) × 5 s − HORIZON_MARGIN    // HORIZON_MARGIN = 7 days
+check_horizon(period_end_ts, k, period_secs):
+    k <= 0                                         → passes
+    period_end_ts + k × period_secs <= horizon_ts  → passes
+    otherwise                                      → BeyondApprovalHorizon (23)
+```
+
+| Call | `period_end_ts` used | `k` |
+|---|---|---|
+| `subscribe` | the new subscription's: `now + trial_period_secs` with a trial, else `now + period_secs` (the first, directly paid period counts) | `periods` |
+| `extend`, `periods > 0` | the stored one | `reserved / price` after adding `periods` |
+| `extend`, `periods = 0` | not checked | — |
+
+`horizon_ts` is about 173 days ahead: the expiry is about 180 days (`max_ttl`), rounded down to 720 ledgers, minus the 7-day margin. The margin covers drift between ledger time and 5 seconds per ledger.
+
+`period_end_ts + k × period_secs` is when the window of the last budgeted charge closes. Later signed calls only move the allowance's **expiry ledger** later (`approval_cap()` never decreases), so **the allowance can no longer expire while an accepted budget remains, as long as ledgers average at least about 4.81 s** ([10.15](10-security-considerations.md#1015-known-limitation-ledger-speed-and-the-approval-horizon)). `horizon_ts` itself can move slightly earlier within a 720-ledger bucket when ledgers run faster than 5 s; the guarantee rests on the expiry ledger. Only a direct revoke or lower in the token, or a `cancel` under contention, can still leave live subscriptions uncovered ([10.13](10-security-considerations.md#1013-accepted-limitation-uncovered-budgets-after-a-direct-revoke-or-lower)).
+
+At `subscribe`, the first period counts: without a trial, `period_end_ts = now + period_secs`, so even one prepaid period needs `2 × period_secs <= about 173 days`.
+
+| Service period | Most prepaid periods at `subscribe` (no trial) | With a 7-day trial | Renewing later |
+|---|---|---|---|
+| Weekly (7 days) | 23 (after the paid first week: about 24 weeks in total) | 23 | `extend` as the budget runs down |
+| Monthly (30 days) | 4 (last window at day 150) | 5 (last window at day 157) | `extend` as the budget runs down |
+| Quarterly (90 days) | 0: no prepaid budget at `subscribe` (90 + 90 = 180) | 1 (7 + 90 = 97) | one period at a time, by an `extend` made late in the paid period (see below) |
+| about 86.5 to about 173 days | 0 | 1 if `trial_period_secs + period_secs <= about 173 days`, else 0 | one period at a time, by an `extend` made late in the paid period |
+| about 173 days or more | 0 | 0 | never through the allowance: subscribe with `periods = 0` and pay each period by subscribing again |
+
+**Renewing a long-period service.** For a period between about 86.5 and about 173 days, subscribe with `periods = 0` (the first period is paid directly). Then call `extend(periods = 1)` once `period_end_ts + period_secs <= horizon_ts`, that is, once `period_end_ts` is within about `173 days − period_secs` of now. This must happen before `period_end_ts`: a subscription with no budget ends at `period_end_ts`, and an ended subscription cannot be extended. Repeat each period.
+
+| Other consequence | Detail |
+|---|---|
+| Prepay limit | The last budgeted window must close within about 173 days, so a subscriber can prepay at most about 170 days ahead. |
+| Top-ups | `extend` checks the whole budget after the call, so it can add only as many periods as the horizon allows at that time. |
+
 **When a subscription has ended.**
 
 ```
@@ -255,17 +300,17 @@ Therefore the wallet's total outflow through this contract is at most the sum, o
 
 **Accepted limitation: the shared number.**
 
-- The allowance can be lower than the sum of the live budgets: after an expiry, after a direct revoke or lower in the token, or after a lapse past about 180 days.
+- The allowance can be lower than the sum of the live budgets after a direct revoke or lower in the token, or after a `cancel` under contention. It cannot lapse while an accepted budget remains (approval horizon, [6.6](#66-the-shared-allowance)), as long as ledgers average at least about 4.81 s ([10.15](10-security-considerations.md#1015-known-limitation-ledger-speed-and-the-approval-horizon)).
 - In that case, charges of different subscriptions compete for it, first come first served.
 - A subscription's legitimate charge can then use headroom that the subscriber added when signing for **another** subscription. That other subscription's charge then fails (`ChargeFailed` or `ApprovalLost`). It is retried, and no money is lost.
-- Recovery: the subscriber extends the failing subscription. This also raises that subscription's budget; there is no call that re-covers an existing budget alone ([10.13](10-security-considerations.md#1013-accepted-limitation-no-way-to-re-cover-an-existing-budget)).
+- Recovery: the subscriber extends the failing subscription, or approves directly in the token. Extending also raises that subscription's budget; there is no call that re-covers an existing budget alone ([10.13](10-security-considerations.md#1013-accepted-limitation-uncovered-budgets-after-a-direct-revoke-or-lower)).
 - No subscription ever pays more than its own budget.
 
 Example:
 
 | Step | Allowance | What happens |
 |---|---|---|
-| A and B are live, each with budget left. The allowance lapses. | 0 | Charges of A and B return `ApprovalLost` |
+| A and B are live, each with budget left. The subscriber revokes the allowance directly in the token. | 0 | Charges of A and B return `ApprovalLost` |
 | The subscriber subscribes to C with 3 periods | `0 + C's budget` | Only C's budget is approved |
 | A and B are due before C | lowered by A's and B's prices | A and B charge from C's headroom, each within its own budget |
 | C is due | not enough | C returns `ChargeFailed` or `ApprovalLost`, retried. The subscriber extends C. |
@@ -287,7 +332,7 @@ Example:
 | A charge succeeds | merchant or executor | the token lowers it by `price` |
 | Any other charge outcome | merchant or executor | unchanged |
 | Direct `approve` in the token | subscriber | whatever the subscriber sets; the next signed call adds to or subtracts from that value |
-| Expiry (about 180 days after the last signed call) | — | becomes 0 |
+| Expiry (about 180 days after the last signed call; by the approval horizon, only after every accepted budget's last window has closed) | — | becomes 0 |
 
 ### 6.8 Status
 
@@ -308,8 +353,8 @@ Typical paths:
 | Paid, budget runs out | `Paid` → `Due` … `Paid` → `Ended` (at `period_end_ts` once `reserved < price`) |
 | Cancel | `Paid` → `Paid` (to `period_end_ts`) → `Ended` |
 | Charge fails, then the subscriber tops up | `Due` (`ChargeFailed`, retried) → `Paid` |
-| Allowance expired or revoked, subscriber extends in time | `Due` (`ApprovalLost`, retried) → `extend` → `Paid` |
-| Allowance expired or revoked, subscriber does nothing | `Due` (`ApprovalLost`, retried) → `Ended` (when the window closes) |
+| Allowance revoked directly, subscriber extends in time | `Due` (`ApprovalLost`, retried) → `extend` → `Paid` |
+| Allowance revoked directly, subscriber does nothing | `Due` (`ApprovalLost`, retried) → `Ended` (when the window closes) |
 | Charge keeps failing, or nobody bills it | `Paid` → `Due` → `Ended` (when the window closes) |
 | Service made `Inactive` | `Paid` → `Ended` (at `period_end_ts`) |
 

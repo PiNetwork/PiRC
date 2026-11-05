@@ -39,7 +39,7 @@ Anyone can call the read methods.
 - `cancel` subtracts the subscription's remaining budget;
 - `refresh_approval` keeps the amount.
 
-The expiry is always the cap, about 180 days. Budget of subscriptions that end without being charged stays in the allowance. Details in [6.6](6-subscription-lifecycle.md#66-the-shared-allowance).
+The expiry is always the cap, about 180 days. `subscribe` and `extend` refuse a budget whose last charge window would close after that expiry minus 7 days (`BeyondApprovalHorizon`), so the allowance cannot lapse while an accepted budget remains, as long as ledgers average at least about 4.81 s ([10.15](10-security-considerations.md#1015-known-limitation-ledger-speed-and-the-approval-horizon)); a subscriber can prepay at most about 170 days ahead. Budget of subscriptions that end without being charged stays in the allowance. Details in [6.6](6-subscription-lifecycle.md#66-the-shared-allowance).
 
 **Per-subscription guards.** A charge is bounded by the subscription's own budget (`reserved`), its own window and its own service's merchant, whatever the shared allowance says. A subscription can never take more than the budget the subscriber gave it. Charges of different subscriptions can compete for the shared number when it is low; see [6.7](6-subscription-lifecycle.md#67-per-subscription-guards-and-accepted-limitations).
 
@@ -113,12 +113,12 @@ Every outcome other than `Charged` changes nothing. The allowance is read once p
 
 ### 2.5 The shared allowance over time
 
-One wallet, add-on-top approvals, and how a lapse makes subscriptions compete for the shared number (the A/B/C example in [6.7](6-subscription-lifecycle.md#67-per-subscription-guards-and-accepted-limitations)):
+One wallet, add-on-top approvals, and how a direct revoke makes subscriptions compete for the shared number (the A/B/C example in [6.7](6-subscription-lifecycle.md#67-per-subscription-guards-and-accepted-limitations)):
 
 ```mermaid
 flowchart TD
-  S1["subscribe A, 12 periods<br/>allowance = 0 + 12 × price_A"] --> S2["subscribe B, 12 periods<br/>allowance = previous + 12 × price_B"]
-  S2 --> L["no signed call for about 180 days<br/>allowance expires: 0"]
+  S1["subscribe A, 4 periods<br/>allowance = 0 + 4 × price_A"] --> S2["subscribe B, 4 periods<br/>allowance = previous + 4 × price_B"]
+  S2 --> L["subscriber revokes the allowance<br/>directly in the token: 0<br/>(expiry cannot cause this:<br/>approval horizon)"]
   L --> F["A and B due: ApprovalLost<br/>(no change, retried)"]
   F --> S3["subscribe C, 3 periods<br/>allowance = 0 + 3 × price_C"]
   S3 --> CH["A and B charge from that headroom<br/>each within its own reserved"]

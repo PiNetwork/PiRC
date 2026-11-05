@@ -151,7 +151,7 @@ Valid values: `"Open"`, `"SignupsClosed"`, `"Inactive"`. `"Inactive"` is final.
 
 ### 9.5 Subscriber: subscribe, extend, cancel
 
-**Subscribe** with a budget of 12 periods and claim the trial. Returns the `sub_id`.
+**Subscribe** with a budget of 4 periods and claim the trial. Returns the `sub_id`.
 
 ```bash
 stellar contract invoke \
@@ -161,11 +161,13 @@ stellar contract invoke \
   -- subscribe \
   --subscriber $SUBSCRIBER \
   --service_id 0 \
-  --periods 12 \
+  --periods 4 \
   --claim_trial true
 ```
 
-With a trial: nothing is paid now; `period_end_ts` is 7 days from now. Without a trial (or with `--claim_trial false`): 5 Pi goes to the merchant now; `period_end_ts` is 30 days from now. Either way `reserved` is 60 Pi, and the allowance becomes its current value plus 60 Pi, with the cap expiry (about 180 days).
+With a trial: nothing is paid now; `period_end_ts` is 7 days from now. Without a trial (or with `--claim_trial false`): 5 Pi goes to the merchant now; `period_end_ts` is 30 days from now. Either way `reserved` is 20 Pi, and the allowance becomes its current value plus 20 Pi, with the cap expiry (about 180 days).
+
+The budget is limited by the approval horizon: the last budgeted charge window must close within about 173 days. At `subscribe` the first period counts too. For this 30-day service that is at most 5 periods with the 7-day trial, or 4 without; `--periods 6` with the trial, or `--periods 5` without, fails with `BeyondApprovalHorizon`. A service with a period above about 86.5 days accepts no prepaid budget at `subscribe` without a trial ([6.6](6-subscription-lifecycle.md#66-the-shared-allowance)).
 
 Check first whether the trial is still available:
 
@@ -174,7 +176,7 @@ stellar contract invoke --id $CONTRACT_ID --network $NETWORK --source subscriber
   -- has_used_trial --subscriber $SUBSCRIBER --service_id 0
 ```
 
-**Extend** by 6 periods. Pass the current `period_end_ts` from `get_subscription`. Only a subscription that has not ended can be extended. The allowance grows by the same `price × periods`. `--periods 0` only renews the allowance's expiry.
+**Extend** by 1 period. Pass the current `period_end_ts` from `get_subscription`. Only a subscription that has not ended can be extended. The allowance grows by the same `price × periods`. `--periods 0` only renews the allowance's expiry. The horizon counts the whole budget after the call: this example (5 periods after a 7-day trial, last window at day 157) passes, but the same `extend` on the no-trial subscription (last window at day 180) fails with `BeyondApprovalHorizon`.
 
 ```bash
 stellar contract invoke \
@@ -184,7 +186,7 @@ stellar contract invoke \
   -- extend \
   --subscriber $SUBSCRIBER \
   --sub_id 0 \
-  --periods 6 \
+  --periods 1 \
   --expected_period_end <PERIOD_END_TS>
 ```
 
@@ -301,6 +303,7 @@ stellar contract invoke --id $TOKEN_ID --network $NETWORK --source subscriber \
 | `PeriodMismatch` (16) | A charge landed since you read `period_end_ts` | Read again and retry |
 | `SubscriptionEnded` (11) | `extend` on a subscription that has ended | Subscribe again (if the service is `Open`) |
 | `TooManyIds` (22) | `get_subscriptions` with more than 50 ids | Split the read |
+| `BeyondApprovalHorizon` (23) | The budget's last charge window would close more than about 173 days ahead | Budget fewer periods now and `extend` later. For services with very long periods, subscribe with `--periods 0`. |
 | `NotProcessExecutor` (10) | `process` from a key that is neither merchant nor executor | Use the merchant key or set the executor |
 | `ProcessLimitTooHigh` (13) | More than 15 items | Split the batch |
 | Host auth error on a signed call | Between simulation and execution, the approve expiry moved to a later 720-ledger bucket, or the allowance changed (a charge, another signed call or a direct approve); see [10.10](10-security-considerations.md#1010-known-limitation-approve-expiry-mismatch) | Simulate again, sign again, resubmit |

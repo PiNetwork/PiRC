@@ -22,7 +22,7 @@ It does not store names, descriptions, per-service or per-merchant lists, histor
 
 ### 1.2 How it works: non-custodial billing
 
-A subscriber approves a budget, for example "12 months at 5 Pi". The funds stay in the subscriber's wallet. Nothing is locked or sent to the contract. Each period the merchant asks the contract to collect one period's price, and the contract moves that amount from the subscriber's wallet to the merchant. No new signature is needed for each charge.
+A subscriber approves a budget, for example "4 months at 5 Pi". The funds stay in the subscriber's wallet. Nothing is locked or sent to the contract. Each period the merchant asks the contract to collect one period's price, and the contract moves that amount from the subscriber's wallet to the merchant. No new signature is needed for each charge.
 
 This uses Soroban's token allowance. The subscriber `approve`s the contract as a spender for an amount and until an expiry ledger. The contract can then call `transfer_from` up to that amount.
 
@@ -58,7 +58,7 @@ The contract in this version is a new deployment. It does not upgrade or migrate
 Most apps do not call the contract directly. A Pi Browser app starts a subscription with the Pi SDK:
 
 ```javascript
-await Pi.Subscriptions.subscribe(serviceId, { periods: 12 });
+await Pi.Subscriptions.subscribe(serviceId, { periods: 4 });
 ```
 
 The Pi Wallet builds the `subscribe` call, shows the terms read from the transaction, and asks the user to sign. Subscriptions created by calling the contract directly are valid on-chain and follow every rule in this document, but Pi's apps and services do not know about them. The SDK documentation covers this.
