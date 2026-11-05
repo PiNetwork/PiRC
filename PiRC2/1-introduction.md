@@ -14,7 +14,8 @@ The contract keeps the terms, state and money rules of every subscription. It:
 - stores each subscription's current period end, remaining budget and number of paid periods;
 - decides who may call what, for every caller, including direct RPC calls;
 - charges a subscription at most once per billing period, and only inside that period's window;
-- at every subscriber signature, sets that subscriber's token allowance to what their subscriptions can still spend, after releasing subscriptions that ended on past days;
+- at every subscriber signature, adds the new budget to (or removes a cancelled budget from) that subscriber's token allowance;
+- bounds every charge by the subscription's own budget and window, whatever the shared allowance says;
 - keeps an append-only index of every subscription each wallet created, so subscriptions created by calling the contract directly can be found.
 
 It does not store names, descriptions, per-service or per-merchant lists, history or status labels. Those live off-chain. Status is computed from the stored fields and the clock when it is read. Payment history comes from the chain's transaction history.
@@ -25,7 +26,7 @@ A subscriber approves a budget, for example "12 months at 5 Pi". The funds stay 
 
 This uses Soroban's token allowance. The subscriber `approve`s the contract as a spender for an amount and until an expiry ledger. The contract can then call `transfer_from` up to that amount.
 
-The Pi token keeps **one allowance per (subscriber, contract)**, shared by all of that subscriber's subscriptions in this contract. The contract tracks a separate budget, `reserved`, for each subscription. The contract keeps a running total of those budgets per wallet, grouped by the UTC day each subscription's current charge window closes. Every time the subscriber signs a call, the contract first releases the budget of subscriptions that ended on past days, then sets the shared allowance to that total. See [6.7 Keeping the allowance in sync](6-subscription-lifecycle.md#67-keeping-the-allowance-in-sync).
+The Pi token keeps **one allowance per (subscriber, contract)**, shared by all of that subscriber's subscriptions in this contract. The contract tracks a separate budget, `reserved`, for each subscription, and every charge is bounded by it. When the subscriber signs a call, the contract reads the token's current allowance and approves that value plus the new budget (`subscribe`, `extend`) or minus the cancelled budget (`cancel`). See [6.6 The shared allowance](6-subscription-lifecycle.md#66-the-shared-allowance).
 
 As long as the wallet holds enough Pi when a charge comes due, the subscription renews.
 
@@ -43,8 +44,8 @@ The contract in this version is a new deployment. It does not upgrade or migrate
 | `approve_periods` set by the merchant on the service | The subscriber picks `periods` at `subscribe` and can add more with `extend` |
 | `process(merchant, service_id)` walks a stored list | `process(caller, service_id, items)` takes explicit `sub_id`s, each with the `expected_period_end` it expects; at most 15 per call |
 | Only the merchant can bill | The merchant or a process-only executor key can bill |
-| Allowance only ever added to | Allowance **set** to the wallet's `total` on every subscriber signature, after releasing whole past days of ended subscriptions |
-| Subscription and service lists on-chain; `get_subscriber_subs`, `get_merchant_subs`, `get_merchant_services` | No per-service or per-merchant lists. Per wallet: an `Allowance` summary, day buckets of chargeable budgets, and an append-only index of every `sub_id` the wallet created (`get_wallet_sub_ids`) |
+| Allowance only ever added to | Allowance adjusted on top of the token's current value: plus the budget added, minus the budget cancelled, expiry always at the cap. Each charge is bounded by its subscription's own budget. |
+| Subscription and service lists on-chain; `get_subscriber_subs`, `get_merchant_subs`, `get_merchant_services` | No per-service or per-merchant lists. Per wallet: an append-only index of every `sub_id` the wallet created (`get_wallet_sub_ids`) |
 | `name`, `is_active`, `created_at`, `next_charge_ts`, `service_end_ts`, price copied into each subscription | Service holds only its terms and `state`; subscription holds `period_end_ts`, `reserved`, `paid_periods` |
 | Service `is_active` | `state`: `Open`, `SignupsClosed` or `Inactive` (final) |
 | Stored status | Status derived when read: `Trial`, `Paid`, `Due`, `Ended` |

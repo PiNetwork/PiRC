@@ -33,14 +33,15 @@ Anyone can call the read methods.
 
 **Reserved budget.** Each subscription has `reserved`: the approved budget it can still spend, always a whole number of prices. `subscribe` and `extend` add `price × periods`. Each charge takes one `price`. `cancel` sets it to 0. A subscription renews only while `reserved >= price`. The first payment at `subscribe` is a direct transfer and does not come from `reserved`.
 
-**Allowance summary and day buckets.** The Pi token holds one allowance per (subscriber, contract), and only the subscriber's signature can change it. The contract keeps, per wallet:
+**Shared allowance, adjusted on top.** The Pi token holds one allowance per (subscriber, contract), and only the subscriber's signature can change it. The contract keeps no copy of it. Every call the subscriber signs reads the token's current allowance and approves that value plus or minus the call's own change:
 
-- an `Allowance` record with `total`, the sum of the budgets that can still be charged;
-- day buckets `Bkt(subscriber, day)`. Each subscription with budget left sits in the bucket of the UTC day its current charge window closes. A bucket part holds up to 64 items; a busier day continues in overflow parts `BktPart(subscriber, day, k)`, so a day never fills up.
+- `subscribe` and `extend` add `price × periods`;
+- `cancel` subtracts the subscription's remaining budget;
+- `refresh_approval` keeps the amount.
 
-A charge moves the subscription to the next period's bucket at once. So an item still in a bucket after its day has passed belongs to a subscription that was not charged in its window, which has ended.
+The expiry is always the cap, about 180 days. Budget of subscriptions that end without being charged stays in the allowance. Details in [6.6](6-subscription-lifecycle.md#66-the-shared-allowance).
 
-Every call the subscriber signs starts with **cleanup**: it releases whole past days (up to 40 pages per call, each part being a page, and at most about 2,000 items) without reading any subscription. It then **sets** the allowance to `total`. Between signatures the allowance can be higher than needed; it is never lower. That extra amount cannot be spent. Details in [6.6](6-subscription-lifecycle.md#66-cleanup) and [6.7](6-subscription-lifecycle.md#67-keeping-the-allowance-in-sync).
+**Per-subscription guards.** A charge is bounded by the subscription's own budget (`reserved`), its own window and its own service's merchant, whatever the shared allowance says. A subscription can never take more than the budget the subscriber gave it. Charges of different subscriptions can compete for the shared number when it is low; see [6.7](6-subscription-lifecycle.md#67-per-subscription-guards-and-accepted-limitations).
 
 **Wallet index.** `WalletSubs(subscriber, page)` lists every `sub_id` a wallet ever created, 50 per page, including subscriptions created by calling the contract directly. It is append-only.
 
@@ -56,8 +57,7 @@ Every call the subscriber signs starts with **cleanup**: it releases whole past 
 
 ```mermaid
 flowchart TD
-  A[subscribe<br/>subscriber, service_id, periods, claim_trial] --> CL["cleanup<br/>release past day buckets (max 40)"]
-  CL --> B{Service exists?}
+  A[subscribe<br/>subscriber, service_id, periods, claim_trial] --> B{Service exists?}
   B -- no --> E1[ServiceNotFound]
   B -- yes --> C{state == Open?}
   C -- no --> E2[ServiceNotOpen]
@@ -69,16 +69,12 @@ flowchart TD
   I -- no --> T["Trial<br/>period_end_ts = now + trial_period_secs<br/>paid_periods = 0<br/>set TrialUsed"]
   I -- yes --> P
   H -- no --> P["First payment<br/>token.transfer price: subscriber to merchant<br/>period_end_ts = now + period_secs<br/>paid_periods = 1"]
-  T --> R["save Sub, set ActiveSub<br/>append sub_id to WalletSubs"]
+  T --> R["save Sub, set ActiveSub<br/>append sub_id to WalletSubs<br/>event sub_new"]
   P --> R
-  R --> K{amount > 0?}
-  K -- yes --> BK["add (sub_id, amount) to the bucket of day(deadline)<br/>first part with room, or a new part if all are full<br/>total += amount, raise max_close"]
-  K -- no --> EV
-  BK --> EV[event sub_new]
-  EV --> AP["token.approve(total, expiry from max_close)<br/>event approval<br/>return SubscribeResult"]
+  R --> AP["current = token.allowance(subscriber, contract)<br/>approve(current + price × periods, cap expiry)<br/>event approval<br/>return sub_id"]
 ```
 
-`deadline = period_end_ts + period_secs`. `TrialUsed` is read only when `claim_trial` is true and the service has a trial. `period_end_ts` is checked for `TimestampOverflow`. If the first payment fails (for example, low balance), the whole call fails and nothing is written, including the cleanup.
+`TrialUsed` is read only when `claim_trial` is true and the service has a trial. `period_end_ts` is checked for `TimestampOverflow`. If the first payment fails (for example, low balance), the whole call fails and nothing is written.
 
 ### 2.4 Process: the charge rule
 
@@ -106,26 +102,28 @@ flowchart TD
   S4 -- yes --> O4[Exhausted]
   S4 -- no --> S5{service Inactive?}
   S5 -- yes --> O5[Ended]
-  S5 -- no --> S5b{"item in the bucket of<br/>day(deadline), any part?"}
-  S5b -- no --> O5b[Ended]
-  S5b -- yes --> S5c{allowance == 0?}
+  S5 -- no --> S5c{allowance == 0?}
   S5c -- yes --> O5c[ApprovalLost<br/>retried later]
-  S5c -- no --> S6{try_transfer_from succeeds?}
+  S5c -- no --> S6{"try_transfer_from(price)<br/>succeeds?"}
   S6 -- no --> O6[ChargeFailed<br/>retried later]
-  S6 -- yes --> O7["Charged<br/>period_end_ts += period_secs<br/>reserved -= price, paid_periods += 1<br/>move item to next deadline's bucket<br/>(in place if the same day)<br/>total -= old amount, += new amount<br/>event charged, maybe low_bal / low_alw"]
+  S6 -- yes --> O7["Charged<br/>period_end_ts += period_secs<br/>reserved -= price, paid_periods += 1<br/>token lowers the allowance by price<br/>event charged, maybe low_bal / low_alw"]
 ```
 
-Every outcome other than `Charged` changes nothing. The allowance is read once per subscriber per call and lowered by each charge in that call.
+Every outcome other than `Charged` changes nothing. The allowance is read once per subscriber per call and lowered by each charge in that call. The transfer is always exactly `price`, to this service's merchant.
 
-### 2.5 Day buckets over time
+### 2.5 The shared allowance over time
 
-One wallet with one 30-day subscription, 12 periods budgeted, that is charged once and then never again. Day numbers count from `EPOCH` (2026-01-01 is day 0); `d` is the subscription day.
+One wallet, add-on-top approvals, and how a lapse makes subscriptions compete for the shared number (the A/B/C example in [6.7](6-subscription-lifecycle.md#67-per-subscription-guards-and-accepted-limitations)):
 
 ```mermaid
-flowchart LR
-  S["subscribe on day d, no trial<br/>deadline on day d+60<br/>Bkt(w, d+60): (id, 12 × price)<br/>total = 12 × price"] --> C["charge on day d+30<br/>item moves to Bkt(w, d+90)<br/>amount 11 × price<br/>total = 11 × price"]
-  C --> M["no charge in days d+60 to d+90<br/>window closes on day d+90<br/>status Ended"]
-  M --> K["next signed call on day d+91 or later<br/>cleanup releases Bkt(w, d+90)<br/>total -= 11 × price<br/>approve(total)"]
+flowchart TD
+  S1["subscribe A, 12 periods<br/>allowance = 0 + 12 × price_A"] --> S2["subscribe B, 12 periods<br/>allowance = previous + 12 × price_B"]
+  S2 --> L["no signed call for about 180 days<br/>allowance expires: 0"]
+  L --> F["A and B due: ApprovalLost<br/>(no change, retried)"]
+  F --> S3["subscribe C, 3 periods<br/>allowance = 0 + 3 × price_C"]
+  S3 --> CH["A and B charge from that headroom<br/>each within its own reserved"]
+  CH --> CF["C due: allowance too low<br/>ChargeFailed or ApprovalLost, retried"]
+  CF --> X["subscriber extends C<br/>allowance += price_C × periods"]
 ```
 
 ### 2.6 Status

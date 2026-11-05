@@ -64,16 +64,16 @@ Amounts are in the token's smallest unit. Pi has 7 decimal places: `10000000` = 
 ```
 1. Merchant:   register_service(merchant, price, period_secs, trial_period_secs)  -> service_id
 2. Merchant:   set_executor(merchant, service_id, executor)                       (optional)
-3. Subscriber: subscribe(subscriber, service_id, periods, claim_trial)            -> {sub_id, cleanup}
-               cleanup of past days; trial, or first payment now;
-               item added to the deadline's day bucket; allowance set to total
+3. Subscriber: subscribe(subscriber, service_id, periods, claim_trial)            -> sub_id
+               trial, or first payment now;
+               allowance = current + price × periods (cap expiry)
 4. Billing:    get_subscription(sub_id)                                           -> period_end_ts
                once period_end_ts has passed (status Due):
                process(caller, service_id, [{sub_id, expected_period_end}])       -> [{sub_id, outcome}]
-5. Subscriber: extend(subscriber, sub_id, periods, expected_period_end)           -> CleanupReport; add periods
-               refresh_approval(subscriber)                                       -> CleanupReport; clean up,
-                                                                                  renew or restore the allowance
-6. Subscriber: cancel(subscriber, sub_id)                                         -> CleanupReport; no more charges;
+5. Subscriber: extend(subscriber, sub_id, periods, expected_period_end)           add periods;
+                                                                                  allowance += price × periods
+               refresh_approval(subscriber)                                       renew the expiry only
+6. Subscriber: cancel(subscriber, sub_id)                                         no more charges; allowance −= remaining budget;
                                                                                   access lasts to period_end_ts
 ```
 
@@ -151,7 +151,7 @@ Valid values: `"Open"`, `"SignupsClosed"`, `"Inactive"`. `"Inactive"` is final.
 
 ### 9.5 Subscriber: subscribe, extend, cancel
 
-**Subscribe** with a budget of 12 periods and claim the trial. Returns a `SubscribeResult`: the `sub_id` and the `CleanupReport` of ended subscriptions released by this call, for example `{"sub_id":0,"cleanup":{"days_cleared":0,"released":"0","more":false}}`.
+**Subscribe** with a budget of 12 periods and claim the trial. Returns the `sub_id`.
 
 ```bash
 stellar contract invoke \
@@ -165,7 +165,7 @@ stellar contract invoke \
   --claim_trial true
 ```
 
-With a trial: nothing is paid now; `period_end_ts` is 7 days from now. Without a trial (or with `--claim_trial false`): 5 Pi goes to the merchant now; `period_end_ts` is 30 days from now. Either way `reserved` is 60 Pi. The subscription goes into the day bucket of its deadline (`period_end_ts + period_secs`), and the allowance is set to the wallet's new `total`.
+With a trial: nothing is paid now; `period_end_ts` is 7 days from now. Without a trial (or with `--claim_trial false`): 5 Pi goes to the merchant now; `period_end_ts` is 30 days from now. Either way `reserved` is 60 Pi, and the allowance becomes its current value plus 60 Pi, with the cap expiry (about 180 days).
 
 Check first whether the trial is still available:
 
@@ -174,7 +174,7 @@ stellar contract invoke --id $CONTRACT_ID --network $NETWORK --source subscriber
   -- has_used_trial --subscriber $SUBSCRIBER --service_id 0
 ```
 
-**Extend** by 6 periods. Pass the current `period_end_ts` from `get_subscription`. Only a subscription that has not ended can be extended. `--periods 0` only re-approves. Returns a `CleanupReport`.
+**Extend** by 6 periods. Pass the current `period_end_ts` from `get_subscription`. Only a subscription that has not ended can be extended. The allowance grows by the same `price × periods`. `--periods 0` only renews the allowance's expiry.
 
 ```bash
 stellar contract invoke \
@@ -190,7 +190,7 @@ stellar contract invoke \
 
 Fails with `PeriodMismatch` if a charge moved `period_end_ts` since you read it. Read again and retry.
 
-**Refresh the approval** (renew the allowance's expiry, release ended subscriptions, or restore billing after the allowance expired or was revoked). It returns a `CleanupReport`; if `more` is `true`, run it again to clean the next 40 days.
+**Refresh the approval**: renew the allowance's expiry at the same amount. It does not help once the allowance is 0; use `extend` on the subscriptions to keep instead.
 
 ```bash
 stellar contract invoke \
@@ -243,7 +243,7 @@ The result lists one outcome per item, for example:
 [{"sub_id":0,"outcome":"Charged"},{"sub_id":1,"outcome":"NotDue"}]
 ```
 
-Running the same command again returns `AlreadyHandled` for item 0 and charges nothing. An item that returns `ChargeFailed` is unchanged: send it again in a later run, with the same `expected_period_end`, until its window closes. An item that returns `ApprovalLost` is also unchanged: the subscriber's allowance is 0 (expired or revoked). Retry it after the subscriber signs any call, such as `refresh_approval`, which re-approves `total`. A successful charge moves the subscription to the next period's day bucket; no other outcome changes anything. See [6.5](6-subscription-lifecycle.md#65-process-batch-charge) for every outcome.
+Running the same command again returns `AlreadyHandled` for item 0 and charges nothing. An item that returns `ChargeFailed` is unchanged: send it again in a later run, with the same `expected_period_end`, until its window closes. An item that returns `ApprovalLost` is also unchanged: the subscriber's allowance is 0 (expired or revoked). Retry it after the subscriber adds allowance back with `subscribe` or `extend` (or a direct `approve`). Only a successful charge changes anything. See [6.5](6-subscription-lifecycle.md#65-process-batch-charge) for every outcome.
 
 ### 9.7 Reads
 
@@ -261,10 +261,6 @@ stellar contract invoke --id $CONTRACT_ID --network $NETWORK --source subscriber
 # Several subscriptions (up to 50; missing ids skipped)
 stellar contract invoke --id $CONTRACT_ID --network $NETWORK --source subscriber \
   -- get_subscriptions --sub_ids '[0,1,2]'
-
-# The wallet's allowance summary: total, cleanup backlog (pending_days), max_close
-stellar contract invoke --id $CONTRACT_ID --network $NETWORK --source subscriber \
-  -- get_allowance --subscriber $SUBSCRIBER
 
 # Every subscription the wallet ever created: count, then pages of 50 ids
 stellar contract invoke --id $CONTRACT_ID --network $NETWORK --source subscriber \
@@ -289,7 +285,7 @@ stellar contract invoke --id $CONTRACT_ID --network $NETWORK --source subscriber
   -- version
 ```
 
-To compare the allowance the token holds with `get_allowance(...).total`, read it from the token:
+To compare the allowance the token holds with what the wallet's live subscriptions need (the sum of `(reserved / price) × price`), read it from the token:
 
 ```bash
 stellar contract invoke --id $TOKEN_ID --network $NETWORK --source subscriber \
@@ -307,7 +303,7 @@ stellar contract invoke --id $TOKEN_ID --network $NETWORK --source subscriber \
 | `TooManyIds` (22) | `get_subscriptions` with more than 50 ids | Split the read |
 | `NotProcessExecutor` (10) | `process` from a key that is neither merchant nor executor | Use the merchant key or set the executor |
 | `ProcessLimitTooHigh` (13) | More than 15 items | Split the batch |
-| Host auth error on a signed call | The approve expiry crossed a 720-ledger bucket ([10.10](10-security-considerations.md#1010-known-limitation-approve-expiry-mismatch)), or a UTC midnight passed ([10.11](10-security-considerations.md#1011-known-limitation-utc-midnight-between-simulation-and-execution)), between simulation and execution | Simulate again, sign again, resubmit |
+| Host auth error on a signed call | Between simulation and execution, the approve expiry moved to a later 720-ledger bucket, or the allowance changed (a charge, another signed call or a direct approve); see [10.10](10-security-considerations.md#1010-known-limitation-approve-expiry-mismatch) | Simulate again, sign again, resubmit |
 
 The full list is in [4. Error Codes](4-error-codes.md).
 
